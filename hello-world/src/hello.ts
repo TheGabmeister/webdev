@@ -1,6 +1,8 @@
-function greet(name: string): string {
-  return `Hello, ${name}!`;
-}
+const message = document.getElementById("message");
+const helloButton = document.getElementById("hello-button");
 
-const message: string = greet("World");
-console.log(message);
+if (message && helloButton) {
+  helloButton.addEventListener("click", () => {
+    message.textContent = "Button clicked";
+  });
+}

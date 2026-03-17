@@ -1,0 +1,15 @@
+Frontend only (no backend needed)
+
+Calculator — practice DOM manipulation and event handling
+Todo list — add/remove/complete items, save to localStorage
+Weather app — fetch from a public weather API (OpenWeatherMap has a free tier), display icons and temperature
+With a simple backend (like you have now)
+
+URL shortener — take a long URL, store it, redirect via a short code. Teaches databases (SQLite is a good start)
+Paste bin — share code snippets via a link, like a mini Pastebin
+Note-taking app — create/edit/delete notes with user accounts. Teaches authentication
+More ambitious
+
+Chat app — real-time messaging with WebSockets
+Blog — markdown posts, an admin panel to write them, public pages to read them
+For your stack (Node.js + TypeScript + Express), the URL shortener is the most natural next step — it's small, adds a database for the first time, and the concept is easy to understand. SQLite with the better-sqlite3 package is the simplest database to start with (no separate server to run).

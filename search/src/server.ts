@@ -6,7 +6,7 @@ const app = express();
 const PORT = process.env["PORT"] ?? 3000;
 
 // Serve the frontend
-app.use(express.static(path.join(__dirname, "../public")));
+app.use(express.static(path.join(process.cwd(), "public")));
 
 // Search API — proxies to Brave Search so the API key stays server-side
 app.get("/api/search", async (req, res) => {

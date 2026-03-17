@@ -1,0 +1,233 @@
+:root {
+  --sand: #fff5df;
+  --peach: #ffbe91;
+  --coral: #f56c56;
+  --melon: #f9d57a;
+  --mint: #7ed7c1;
+  --teal: #2f6f73;
+  --ink: #17313a;
+  --glass: rgba(255, 252, 247, 0.72);
+  --line: rgba(23, 49, 58, 0.12);
+  --shadow: 0 24px 60px rgba(23, 49, 58, 0.16);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Trebuchet MS", "Gill Sans", sans-serif;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.85), transparent 24%),
+    linear-gradient(135deg, #ffe8b7 0%, #ffe7d8 38%, #e3fbf4 100%);
+  overflow-x: hidden;
+  transition:
+    background 0.45s ease,
+    color 0.35s ease;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.48), transparent 20%),
+    radial-gradient(circle at 80% 15%, rgba(126, 215, 193, 0.18), transparent 24%),
+    linear-gradient(120deg, rgba(245, 108, 86, 0.08), rgba(47, 111, 115, 0.08));
+  z-index: -2;
+  animation: sky-shift 18s ease-in-out infinite alternate;
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.22) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.22) 1px, transparent 1px);
+  background-size: 42px 42px;
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.28), transparent 82%);
+  z-index: -1;
+  pointer-events: none;
+}
+
+.page-shell {
+  position: relative;
+  min-height: 100vh;
+  padding: 24px clamp(20px, 4vw, 52px) 56px;
+}
+
+.scene {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.orb {
+  position: absolute;
+  display: block;
+  border-radius: 50%;
+  opacity: 0.82;
+  filter: blur(8px);
+  animation: float 14s ease-in-out infinite;
+}
+
+.orb-one {
+  width: 240px;
+  height: 240px;
+  top: 8%;
+  right: -60px;
+  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.92), rgba(245, 108, 86, 0.45));
+}
+
+.orb-two {
+  width: 180px;
+  height: 180px;
+  bottom: 14%;
+  left: -30px;
+  background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.8), rgba(126, 215, 193, 0.58));
+  animation-duration: 19s;
+}
+
+.orb-three {
+  width: 96px;
+  height: 96px;
+  top: 36%;
+  left: 12%;
+  background: radial-gradient(circle at 40% 40%, rgba(255, 255, 255, 0.76), rgba(249, 213, 122, 0.72));
+  animation-duration: 12s;
+}
+
+.orb-four {
+  width: 128px;
+  height: 128px;
+  bottom: 22%;
+  right: 18%;
+  background: radial-gradient(circle at 40% 40%, rgba(255, 255, 255, 0.72), rgba(47, 111, 115, 0.34));
+  animation-duration: 17s;
+}
+
+.topbar,
+main,
+footer {
+  position: relative;
+  z-index: 1;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+}
+
+h1,
+h2 {
+  font-family: "Palatino Linotype", "Book Antiqua", Georgia, serif;
+}
+
+h1 {
+  max-width: 10ch;
+  font-size: clamp(3.2rem, 8vw, 6rem);
+  line-height: 0.94;
+  letter-spacing: -0.045em;
+  text-wrap: balance;
+}
+
+footer {
+  margin-top: 40px;
+  color: rgba(23, 49, 58, 0.64);
+  font-size: 0.95rem;
+  transition: color 0.35s ease;
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate3d(18px, -26px, 0) scale(1.04);
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    transform: scale(1) rotate(0deg);
+    border-radius: 18px;
+  }
+
+  50% {
+    transform: scale(1.08) rotate(8deg);
+    border-radius: 22px;
+  }
+}
+
+@keyframes pulse-width {
+  0%,
+  100% {
+    width: 74%;
+  }
+
+  50% {
+    width: 88%;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes sky-shift {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  to {
+    transform: translate3d(0, -12px, 0) scale(1.04);
+  }
+}
+
+@media (max-width: 900px) {
+  h1 {
+    max-width: 12ch;
+  }
+}
+
+@media (max-width: 560px) {
+  .page-shell {
+    padding-inline: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

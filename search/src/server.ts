@@ -3,7 +3,7 @@ import path from "path";
 import "dotenv/config";
 
 const app = express();
-const PORT = process.env["PORT"] ?? 3000;
+const PORT = Number(process.env["PORT"] ?? 3000);
 
 // Serve the frontend
 app.use(express.static(path.join(process.cwd(), "public")));
@@ -52,6 +52,6 @@ app.get("/api/search", async (req, res) => {
   res.json({ results });
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running at http://localhost:${PORT}`);
 });

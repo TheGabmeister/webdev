@@ -444,6 +444,7 @@
 }
 
 .eyebrow {
+  font-family: var(--font-ui);
   margin: 0 0 0.35rem;
   font-size: 0.78rem;
   font-weight: 700;
@@ -461,6 +462,7 @@
 
 .refresh-button,
 .retry-button {
+  font-family: var(--font-ui);
   border: 1px solid var(--button-border);
   border-radius: 999px;
   background: var(--button-bg);
@@ -492,6 +494,7 @@
 
 .date-pill,
 .status-chip {
+  font-family: var(--font-ui);
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
@@ -548,9 +551,12 @@
 }
 
 .condition-name {
+  font-family: var(--font-ui);
   margin: 0 0 0.35rem;
   font-size: 1.35rem;
-  font-weight: 800;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
 }
 
 .condition-detail {
@@ -578,6 +584,7 @@
 }
 
 .meta-label {
+  font-family: var(--font-ui);
   color: var(--text-soft);
   font-size: 0.78rem;
   letter-spacing: 0.08em;

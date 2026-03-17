@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Search</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="home">
+  <main class="home-main">
+    <h1 class="logo">Search</h1>
+    <form class="search-form" action="results.html" method="get">
+      <div class="search-box">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          type="text"
+          name="q"
+          class="search-input"
+          placeholder="Search the web"
+          autofocus
+          autocomplete="off"
+        />
+        <button type="button" class="clear-btn" aria-label="Clear" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <button type="submit" class="search-btn">Search</button>
+    </form>
+  </main>
+  <script src="search.js"></script>
+</body>
+</html>

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Search Results</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="results">
+  <header class="results-header">
+    <a href="index.html" class="logo-small">Search</a>
+    <form class="search-form search-form--compact" action="results.html" method="get">
+      <div class="search-box">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          type="text"
+          name="q"
+          id="results-input"
+          class="search-input"
+          placeholder="Search the web"
+          autocomplete="off"
+        />
+        <button type="button" class="clear-btn" aria-label="Clear" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+    </form>
+  </header>
+
+  <main class="results-main">
+    <p class="results-meta" id="results-meta"></p>
+    <div class="results-list" id="results-list"></div>
+  </main>
+
+  <script src="search.js"></script>
+</body>
+</html>

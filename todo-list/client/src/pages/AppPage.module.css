@@ -1,0 +1,63 @@
+.container {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+  min-height: 100vh;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.email {
+  color: #888;
+  font-size: 0.85rem;
+}
+
+.settingsLink {
+  color: #a78bfa;
+  text-decoration: none;
+  font-size: 0.85rem;
+}
+
+.settingsLink:hover {
+  text-decoration: underline;
+}
+
+.logoutBtn {
+  background: transparent;
+  border: 1px solid #444;
+  color: #999;
+  padding: 0.4rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.logoutBtn:hover {
+  border-color: #666;
+  color: #ddd;
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+}

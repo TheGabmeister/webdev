@@ -9,7 +9,7 @@ A full-stack todo list web app with user authentication. Users can create an acc
 
 | Layer        | Technology                          |
 |--------------|-------------------------------------|
-| Frontend     | React 18, Vite, TypeScript, CSS Modules |
+| Frontend     | React 19, Vite, TypeScript, CSS Modules |
 | Backend      | Node.js, Express, TypeScript        |
 | Database     | PostgreSQL (Render managed)         |
 | ORM          | Drizzle ORM or raw `pg` queries     |

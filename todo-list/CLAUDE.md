@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Stack
 
-- **Frontend**: React 18, Vite, TypeScript, CSS Modules, react-router-dom, @dnd-kit/sortable
+- **Frontend**: React 19, Vite, TypeScript, CSS Modules, react-router-dom, @dnd-kit/sortable
 - **Backend**: Node.js, Express, TypeScript, raw `pg` queries
 - **Database**: PostgreSQL (managed on Render)
 - **Auth**: JWT in httpOnly cookies (7-day expiry), bcrypt

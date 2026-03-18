@@ -8,8 +8,12 @@ function getResend(): Resend | null {
   return resend;
 }
 
+function getBackendUrl() {
+  return process.env.BACKEND_URL || `http://localhost:${process.env.PORT || '3001'}`;
+}
+
 export async function sendVerificationEmail(to: string, token: string) {
-  const link = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
+  const link = `${getBackendUrl()}/api/auth/verify-email?token=${token}`;
   const client = getResend();
 
   if (!client) {

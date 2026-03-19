@@ -12,9 +12,14 @@ declare module "express-session" {
   }
 }
 
+const isProd = process.env.NODE_ENV === "production";
+
 const app = express();
+if (isProd) app.set("trust proxy", 1);
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL || "postgresql://localhost:5432/chat",
+  ssl: isProd ? { rejectUnauthorized: false } : false,
 });
 
 async function initDb() {
@@ -34,7 +39,7 @@ app.use(
     secret: process.env.SESSION_SECRET || "dev-secret-change-me",
     resave: false,
     saveUninitialized: false,
-    cookie: { httpOnly: true, sameSite: "strict" },
+    cookie: { httpOnly: true, sameSite: "lax", secure: isProd },
   })
 );
 

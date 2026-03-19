@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: sans-serif;
+      background: #f0f2f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .card {
+      background: white;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 360px;
+    }
+
+    h1 { font-size: 1.5rem; margin-bottom: 1.5rem; text-align: center; color: #1a1a1a; }
+
+    .field { margin-bottom: 1rem; }
+
+    label { display: block; font-size: 0.875rem; margin-bottom: 0.4rem; color: #555; }
+
+    input {
+      width: 100%;
+      padding: 0.6rem 0.75rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 1rem;
+      transition: border-color 0.2s;
+    }
+
+    input:focus { outline: none; border-color: #4f46e5; }
+
+    input.error { border-color: #e53e3e; }
+
+    .error-msg { font-size: 0.8rem; color: #e53e3e; margin-top: 0.25rem; min-height: 1rem; }
+
+    button {
+      width: 100%;
+      padding: 0.7rem;
+      background: #4f46e5;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      cursor: pointer;
+      margin-top: 0.5rem;
+      transition: background 0.2s;
+    }
+
+    button:hover { background: #4338ca; }
+
+    #register-btn {
+      background: transparent;
+      color: #4f46e5;
+      border: 1px solid #4f46e5;
+    }
+
+    #register-btn:hover { background: #eef2ff; }
+
+    #success {
+      display: none;
+      text-align: center;
+      color: #16a34a;
+      margin-top: 1rem;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Sign In</h1>
+    <form id="login-form">
+      <div class="field">
+        <label for="email">Email</label>
+        <input type="text" id="email" placeholder="you@example.com" />
+        <div class="error-msg" id="email-error"></div>
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="••••••••" />
+        <div class="error-msg" id="password-error"></div>
+      </div>
+      <button type="submit">Login</button>
+      <button type="button" id="register-btn">Register</button>
+    </form>
+    <div id="success">Login successful!</div>
+  </div>
+
+  <script src="dist/login.js"></script>
+</body>
+</html>

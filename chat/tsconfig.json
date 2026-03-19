@@ -4,6 +4,9 @@
     "module": "None",
     "outDir": "./dist",
     "rootDir": "./src",
-    "strict": true
-  }
+    "strict": true,
+    "types": [],
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*"]
 }

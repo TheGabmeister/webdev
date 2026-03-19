@@ -1,9 +1,4 @@
 (() => {
-  interface FormFields {
-    email: HTMLInputElement;
-    password: HTMLInputElement;
-  }
-
   function getElement<T extends HTMLElement>(id: string): T {
     const el = document.getElementById(id) as T | null;
     if (!el) throw new Error(`Element #${id} not found`);
@@ -20,14 +15,22 @@
     errorEl.textContent = "";
   }
 
-  function validate({ email, password }: FormFields): boolean {
-    const emailError = getElement<HTMLElement>("email-error");
-    const passwordError = getElement<HTMLElement>("password-error");
+  const form = getElement<HTMLFormElement>("register-form");
+  const email = getElement<HTMLInputElement>("email");
+  const password = getElement<HTMLInputElement>("password");
+  const confirm = getElement<HTMLInputElement>("confirm");
+  const emailError = getElement<HTMLElement>("email-error");
+  const passwordError = getElement<HTMLElement>("password-error");
+  const confirmError = getElement<HTMLElement>("confirm-error");
 
-    let valid = true;
+  form.addEventListener("submit", async (e: Event) => {
+    e.preventDefault();
 
     clearError(email, emailError);
     clearError(password, passwordError);
+    clearError(confirm, confirmError);
+
+    let valid = true;
 
     if (!email.value.trim()) {
       setError(email, emailError, "Email is required.");
@@ -45,37 +48,24 @@
       valid = false;
     }
 
-    return valid;
-  }
+    if (password.value !== confirm.value) {
+      setError(confirm, confirmError, "Passwords do not match.");
+      valid = false;
+    }
 
-  const form = getElement<HTMLFormElement>("login-form");
-  const fields: FormFields = {
-    email: getElement<HTMLInputElement>("email"),
-    password: getElement<HTMLInputElement>("password"),
-  };
-  const registerBtn = getElement<HTMLButtonElement>("register-btn");
-  registerBtn.addEventListener("click", () => {
-    window.location.href = "/register";
-  });
+    if (!valid) return;
 
-  form.addEventListener("submit", async (e: Event) => {
-    e.preventDefault();
-    if (!validate(fields)) return;
-
-    const res = await fetch("/api/login", {
+    const res = await fetch("/api/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email: fields.email.value,
-        password: fields.password.value,
-      }),
+      body: JSON.stringify({ email: email.value, password: password.value }),
     });
 
     if (res.ok) {
       window.location.href = "/dashboard";
     } else {
       const data = await res.json();
-      setError(fields.email, getElement<HTMLElement>("email-error"), data.error);
+      setError(email, emailError, data.error);
     }
   });
 })();

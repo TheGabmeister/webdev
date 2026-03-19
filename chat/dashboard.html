@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: sans-serif;
+      background: #f0f2f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .card {
+      background: white;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 360px;
+      text-align: center;
+    }
+
+    h1 { font-size: 1.5rem; margin-bottom: 0.5rem; color: #1a1a1a; }
+
+    #email { color: #555; margin-bottom: 1.5rem; font-size: 0.9rem; }
+
+    button {
+      width: 100%;
+      padding: 0.7rem;
+      background: #e53e3e;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    button:hover { background: #c53030; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Welcome!</h1>
+    <p id="email"></p>
+    <button id="logout-btn">Logout</button>
+  </div>
+
+  <script src="dist/dashboard.js"></script>
+</body>
+</html>

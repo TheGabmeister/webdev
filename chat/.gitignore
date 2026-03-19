@@ -1,3 +1,9 @@
+# Environment
+.env
+
+# Server build output
+server-dist/
+
 # Logs
 logs
 *.log

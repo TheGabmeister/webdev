@@ -16,6 +16,96 @@ const router = Router();
 const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
 const isProduction = process.env.NODE_ENV === 'production';
 
+function getFrontendUrl() {
+  return (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/+$/, '');
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function renderVerificationPage(title: string, message: string, ctaLabel: string) {
+  const frontendUrl = escapeHtml(getFrontendUrl());
+  const safeTitle = escapeHtml(title);
+  const safeMessage = escapeHtml(message);
+  const safeCtaLabel = escapeHtml(ctaLabel);
+
+  return `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>${safeTitle}</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        background:
+          radial-gradient(circle at top, #f3fbf6 0%, #eef5ff 45%, #f7f7f9 100%);
+        color: #102316;
+      }
+
+      .card {
+        width: min(100%, 480px);
+        padding: 40px 32px;
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.94);
+        box-shadow: 0 18px 45px rgba(16, 35, 22, 0.12);
+        text-align: center;
+      }
+
+      h1 {
+        margin: 0 0 12px;
+        font-size: clamp(2rem, 5vw, 2.6rem);
+        line-height: 1.1;
+      }
+
+      p {
+        margin: 0;
+        font-size: 1rem;
+        line-height: 1.6;
+        color: #3e5345;
+      }
+
+      a {
+        display: inline-block;
+        margin-top: 28px;
+        padding: 12px 20px;
+        border-radius: 999px;
+        background: #154f31;
+        color: #ffffff;
+        text-decoration: none;
+        font-weight: 600;
+      }
+
+      a:hover {
+        background: #0f3d25;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <h1>${safeTitle}</h1>
+      <p>${safeMessage}</p>
+      <a href="${frontendUrl}">${safeCtaLabel}</a>
+    </main>
+  </body>
+</html>`;
+}
+
 function setCookie(res: Response, token: string) {
   res.cookie('token', token, {
     httpOnly: true,
@@ -109,26 +199,53 @@ router.get('/verify-email', async (req: Request, res: Response) => {
     const { token } = req.query;
 
     if (!token || typeof token !== 'string') {
-      res.status(400).json({ error: 'Token is required' });
+      res
+        .status(400)
+        .type('html')
+        .send(renderVerificationPage(
+          'Invalid verification link',
+          'This verification link is invalid. Request a new verification email from the app and try again.',
+          'Back to app'
+        ));
       return;
     }
 
     const record = await findVerificationToken(token);
     if (!record) {
-      res.status(400).json({ error: 'Invalid or expired token' });
+      res
+        .status(400)
+        .type('html')
+        .send(renderVerificationPage(
+          'Invalid verification link',
+          'This verification link is invalid or has already been used. Request a new verification email from the app and try again.',
+          'Back to app'
+        ));
       return;
     }
 
     if (new Date(record.expires_at) < new Date()) {
-      res.status(400).json({ error: 'Token has expired. Please request a new verification email.' });
+      res
+        .status(400)
+        .type('html')
+        .send(renderVerificationPage(
+          'Verification link expired',
+          'This verification link has expired. Request a new verification email from the app and try again.',
+          'Back to app'
+        ));
       return;
     }
 
     await markEmailVerified(record.user_id);
     await deleteVerificationTokensForUser(record.user_id);
 
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    res.redirect(`${frontendUrl}/login?verified=true`);
+    res
+      .status(200)
+      .type('html')
+      .send(renderVerificationPage(
+        'Email verified',
+        'Your email has been verified. You can now sign in.',
+        'Back to app'
+      ));
   } catch (err) {
     console.error('Verify email error:', err);
     res.status(500).json({ error: 'Internal server error' });

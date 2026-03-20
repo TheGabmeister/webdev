@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Todo App</title>
+  <style>
+    body { font-family: sans-serif; max-width: 500px; margin: 40px auto; }
+    h1 { text-align: center; color: #b83f45; }
+    input[type="text"] { width: 100%; padding: 10px; font-size: 16px; box-sizing: border-box; }
+    ul { list-style: none; padding: 0; }
+    li { display: flex; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; }
+    li.completed label { text-decoration: line-through; color: #999; }
+    label { flex: 1; margin-left: 8px; font-size: 16px; }
+    #count { padding: 8px 0; color: #777; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <h1>Todo App</h1>
+  <input type="text" id="new-todo" placeholder="What needs to be done?" />
+  <ul id="todo-list"></ul>
+  <div id="count"></div>
+
+  <script>
+    const input = document.getElementById('new-todo');
+    const list = document.getElementById('todo-list');
+    const countEl = document.getElementById('count');
+    let todos = [];
+
+    function render() {
+      list.innerHTML = '';
+      todos.forEach((todo, i) => {
+        const li = document.createElement('li');
+        if (todo.done) li.classList.add('completed');
+        li.setAttribute('data-testid', 'todo-item');
+
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = todo.done;
+        cb.setAttribute('aria-label', `Complete ${todo.text}`);
+        cb.addEventListener('change', () => { todos[i].done = cb.checked; render(); });
+
+        const label = document.createElement('label');
+        label.textContent = todo.text;
+        label.setAttribute('data-testid', 'todo-title');
+
+        li.append(cb, label);
+        list.appendChild(li);
+      });
+      const remaining = todos.filter(t => !t.done).length;
+      countEl.textContent = remaining > 0 ? `${remaining} item${remaining !== 1 ? 's' : ''} left` : '';
+    }
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && input.value.trim()) {
+        todos.push({ text: input.value.trim(), done: false });
+        input.value = '';
+        render();
+      }
+    });
+  </script>
+</body>
+</html>

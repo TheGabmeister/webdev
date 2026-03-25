@@ -23,9 +23,11 @@ app.get("/api/search", async (req, res) => {
     return;
   }
 
+  const offset = Math.max(0, Number(req.query["offset"]) || 0);
+
   const url =
     `https://api.search.brave.com/res/v1/web/search` +
-    `?q=${encodeURIComponent(query)}&count=10`;
+    `?q=${encodeURIComponent(query)}&count=10&offset=${offset}`;
 
   const response = await fetch(url, {
     headers: {

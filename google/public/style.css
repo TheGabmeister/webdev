@@ -229,6 +229,41 @@ body {
   line-height: 1.6;
 }
 
+/* ── Pagination ── */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 32px;
+  flex-wrap: wrap;
+}
+
+.page-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 4px;
+  font-size: 14px;
+  color: var(--accent);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.page-btn:hover {
+  background: var(--hover);
+}
+
+.page-btn--active {
+  font-weight: 700;
+  color: var(--text);
+  background: var(--hover);
+  cursor: default;
+}
+
 /* ── Empty / error state ── */
 .state-empty {
   text-align: center;

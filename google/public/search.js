@@ -24,6 +24,7 @@ const resultsList = document.getElementById("results-list");
 if (resultsList) {
   const params = new URLSearchParams(window.location.search);
   const query = params.get("q")?.trim() ?? "";
+  const page = Math.max(1, Number(params.get("page")) || 1);
 
   // Populate the search input with the current query
   const resultsInput = document.getElementById("results-input");
@@ -43,18 +44,19 @@ if (resultsList) {
         <a href="index.html">Go back to search</a>
       </div>`;
   } else {
-    showResults(query);
+    showResults(query, page);
   }
 }
 
-async function showResults(query) {
+async function showResults(query, page = 1) {
   const meta = document.getElementById("results-meta");
   const list = document.getElementById("results-list");
+  const offset = (page - 1) * 10;
 
   if (list) list.innerHTML = `<p class="results-meta">Searching…</p>`;
 
   const start = Date.now();
-  const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+  const res = await fetch(`/api/search?q=${encodeURIComponent(query)}&offset=${offset}`);
 
   if (!res.ok) {
     if (list) list.innerHTML = `<div class="state-empty"><strong>Something went wrong</strong>Try again in a moment.</div>`;
@@ -65,10 +67,11 @@ async function showResults(query) {
   const elapsed = ((Date.now() - start) / 1000).toFixed(2);
 
   if (meta) {
-    meta.textContent = `${results.length} results (${elapsed} seconds)`;
+    meta.textContent = `Page ${page} · ${results.length} results (${elapsed} seconds)`;
   }
 
   renderResults(results);
+  renderPagination(query, page, results.length);
 }
 
 function renderResults(results) {
@@ -101,6 +104,39 @@ function renderResults(results) {
         <p class="result-snippet">${escHtml(r.snippet)}</p>
       </div>`;
   }).join("");
+}
+
+// ── Pagination ───────────────────────────────────────────────────────
+function renderPagination(query, currentPage, resultCount) {
+  const list = document.getElementById("results-list");
+  if (!list) return;
+
+  const nav = document.createElement("nav");
+  nav.className = "pagination";
+
+  const encodedQuery = encodeURIComponent(query);
+
+  if (currentPage > 1) {
+    nav.innerHTML += `<a class="page-btn" href="results.html?q=${encodedQuery}&page=${currentPage - 1}">&larr; Previous</a>`;
+  }
+
+  const startPage = Math.max(1, currentPage - 4);
+  const endPage = startPage + 9;
+
+  for (let p = startPage; p <= endPage; p++) {
+    if (p === currentPage) {
+      nav.innerHTML += `<span class="page-btn page-btn--active">${p}</span>`;
+    } else {
+      nav.innerHTML += `<a class="page-btn" href="results.html?q=${encodedQuery}&page=${p}">${p}</a>`;
+    }
+  }
+
+  // Only show "Next" if we got a full page of results
+  if (resultCount === 10) {
+    nav.innerHTML += `<a class="page-btn" href="results.html?q=${encodedQuery}&page=${currentPage + 1}">Next &rarr;</a>`;
+  }
+
+  list.appendChild(nav);
 }
 
 // ── HTML escaping helpers ─────────────────────────────────────────────

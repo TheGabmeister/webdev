@@ -53,7 +53,14 @@ async function showResults(query, page = 1) {
   const list = document.getElementById("results-list");
   const offset = (page - 1) * 10;
 
-  if (list) list.innerHTML = `<p class="results-meta">Searching…</p>`;
+  if (list) list.innerHTML = Array.from({ length: 4 }, () => `
+    <div class="result-card skeleton-card">
+      <div class="skeleton skeleton-site"></div>
+      <div class="skeleton skeleton-title"></div>
+      <div class="skeleton skeleton-url"></div>
+      <div class="skeleton skeleton-snippet"></div>
+      <div class="skeleton skeleton-snippet skeleton-snippet--short"></div>
+    </div>`).join("");
 
   const start = Date.now();
   const res = await fetch(`/api/search?q=${encodeURIComponent(query)}&offset=${offset}`);

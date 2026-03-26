@@ -73,15 +73,26 @@ router.post('/login', loginRateLimit, async (req: Request, res: Response) => {
 });
 
 // GET /api/auth/session
-router.get('/session', (req: Request, res: Response) => {
+router.get('/session', async (req: Request, res: Response) => {
   if (!req.user) {
     res.status(401).json({ error: 'Not authenticated' });
     return;
   }
 
+  const user = await prisma.user.findUnique({
+    where: { id: req.user.userId },
+  });
+
+  if (!user) {
+    res.status(401).json({ error: 'Not authenticated' });
+    return;
+  }
+
   res.json({
-    id: req.user.userId,
-    email: req.user.email,
+    id: user.id,
+    email: user.email,
+    storageUsed: user.storageUsed.toString(),
+    storageLimit: user.storageLimit.toString(),
   });
 });
 

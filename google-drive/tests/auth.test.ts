@@ -94,6 +94,8 @@ describe('Auth API', () => {
       expect(res.status).toBe(200);
       expect(res.body.email).toBe(email);
       expect(res.body).toHaveProperty('id');
+      expect(res.body).toHaveProperty('storageUsed');
+      expect(res.body).toHaveProperty('storageLimit');
     });
 
     // GET /api/auth/session with no cookie → 401

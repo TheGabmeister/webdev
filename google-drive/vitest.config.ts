@@ -4,7 +4,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    setupFiles: ['./tests/setup.ts'],
+    setupFiles: ['./tests/env.ts', './tests/setup.ts'],
     testTimeout: 30000,
     hookTimeout: 30000,
     pool: 'forks',

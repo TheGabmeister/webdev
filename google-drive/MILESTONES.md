@@ -9,55 +9,55 @@ Each milestone is self-contained and testable before moving to the next.
 Scaffolding, database, auth system, and auth UI.
 
 ### Backend
-- [ ] Initialize Node.js + Express 5 + TypeScript project
-- [ ] Configure Prisma with PostgreSQL
-- [ ] Create the full initial `User` and `File` schema required by the spec, including quota fields, upload state, trash state, and indexes; generate migration
-- [ ] Implement `POST /api/auth/register` and `POST /api/auth/login` with bcrypt
-- [ ] Implement `GET /api/auth/session` for SPA bootstrap
-- [ ] Implement `POST /api/auth/logout`
-- [ ] JWT in `drive_session` cookie with `HttpOnly`, `SameSite=Lax`, path `/`, and conditional `Secure` flag (HTTPS only in production; omitted for localhost)
-- [ ] CSRF double-submit cookie pattern (`csrf_token` cookie + `X-CSRF-Token` header)
-- [ ] Auth middleware on `/api/*` (exclude `/api/auth/register`, `/api/auth/login`, and `/api/auth/session`; `/api/auth/logout` requires auth + CSRF)
-- [ ] Rate limiting on register, login
+- [x] Initialize Node.js + Express 5 + TypeScript project
+- [x] Configure Prisma with PostgreSQL
+- [x] Create the full initial `User` and `File` schema required by the spec, including quota fields, upload state, trash state, and indexes; generate migration
+- [x] Implement `POST /api/auth/register` and `POST /api/auth/login` with bcrypt
+- [x] Implement `GET /api/auth/session` for SPA bootstrap
+- [x] Implement `POST /api/auth/logout`
+- [x] JWT in `drive_session` cookie with `HttpOnly`, `SameSite=Lax`, path `/`, and conditional `Secure` flag (HTTPS only in production; omitted for localhost)
+- [x] CSRF double-submit cookie pattern (`csrf_token` cookie + `X-CSRF-Token` header)
+- [x] Auth middleware on `/api/*` (exclude `/api/auth/register`, `/api/auth/login`, and `/api/auth/session`; `/api/auth/logout` requires auth + CSRF)
+- [x] Rate limiting on register, login
 
 ### Frontend
-- [ ] Initialize Vue 3 + TypeScript + Vite + Vue Router + Pinia + Tailwind
-- [ ] Configure build so Express serves the SPA from `dist/client/`
-- [ ] Configure API client to send cookie-auth requests with `credentials: 'include'`
-- [ ] Auth store with session bootstrap from `GET /api/auth/session`
-- [ ] Auth bootstrap loading state so protected routes do not flicker before session check completes
-- [ ] CSRF: read `csrf_token` cookie, attach `X-CSRF-Token` on mutating requests
-- [ ] Login and Register views with form validation
-- [ ] Router guard: redirect unauthenticated users to `/login?redirect=<route>`
-- [ ] After login, redirect to `redirect` query target if present; otherwise `/drive`
-- [ ] After registration, redirect to `/drive`
-- [ ] Handle 401 responses globally: clear auth state, redirect to login with `redirect=<current-route>`
-- [ ] Handle 403 CSRF responses without logging the user out
+- [x] Initialize Vue 3 + TypeScript + Vite + Vue Router + Pinia + Tailwind
+- [x] Configure build so Express serves the SPA from `dist/client/`
+- [x] Configure API client to send cookie-auth requests with `credentials: 'include'`
+- [x] Auth store with session bootstrap from `GET /api/auth/session`
+- [x] Auth bootstrap loading state so protected routes do not flicker before session check completes
+- [x] CSRF: read `csrf_token` cookie, attach `X-CSRF-Token` on mutating requests
+- [x] Login and Register views with form validation
+- [x] Router guard: redirect unauthenticated users to `/login?redirect=<route>`
+- [x] After login, redirect to `redirect` query target if present; otherwise `/drive`
+- [x] After registration, redirect to `/drive`
+- [x] Handle 401 responses globally: clear auth state, redirect to login with `redirect=<current-route>`
+- [x] Handle 403 CSRF responses without logging the user out
 
 ### Tests
-- [ ] Set up test runner (Vitest + supertest)
-- [ ] Set up isolated test PostgreSQL database lifecycle (migrate/reset per test run or suite)
-- [ ] Set up reusable S3 mocking helpers for presigned URL generation and object existence/delete checks
-- [ ] Register → sets auth + CSRF cookies, returns user summary
-- [ ] Login → sets auth + CSRF cookies, returns user summary
-- [ ] Login with wrong password → 401, no cookies set
-- [ ] Register with duplicate email → 409
-- [ ] Register with short password (< 8 chars) → 400
-- [ ] `GET /api/auth/session` with valid cookie → returns user
-- [ ] `GET /api/auth/session` with no cookie → 401
-- [ ] `POST /api/auth/logout` → clears both cookies
-- [ ] Mutating request without CSRF token → 403
-- [ ] Mutating request with mismatched CSRF token → 403
-- [ ] Auth-required endpoint without session cookie → 401
-- [ ] Rate limit: 11th login in 15 minutes → 429
+- [x] Set up test runner (Vitest + supertest)
+- [x] Set up isolated test PostgreSQL database lifecycle (migrate/reset per test run or suite)
+- [x] Set up reusable S3 mocking helpers for presigned URL generation and object existence/delete checks
+- [x] Register → sets auth + CSRF cookies, returns user summary
+- [x] Login → sets auth + CSRF cookies, returns user summary
+- [x] Login with wrong password → 401, no cookies set
+- [x] Register with duplicate email → 409
+- [x] Register with short password (< 8 chars) → 400
+- [x] `GET /api/auth/session` with valid cookie → returns user
+- [x] `GET /api/auth/session` with no cookie → 401
+- [x] `POST /api/auth/logout` → clears both cookies
+- [x] Mutating request without CSRF token → 403
+- [x] Mutating request with mismatched CSRF token → 403
+- [x] Auth-required endpoint without session cookie → 401
+- [x] Rate limit: 11th login in 15 minutes → 429
 
 ### Verify (manual)
-- [ ] Register a new user → cookie is set → redirected to `/drive`
-- [ ] Refresh the page → session rehydrates from `GET /api/auth/session`
-- [ ] Logout → cookie cleared → redirected to `/login`
-- [ ] Expired session on a protected route → redirected to `/login?redirect=<route>` → after login returns to original route
-- [ ] Mutating request without CSRF token → 403, session remains intact
-- [ ] 11th login attempt in 15 minutes → 429
+- [x] Register a new user → cookie is set → redirected to `/drive`
+- [x] Refresh the page → session rehydrates from `GET /api/auth/session`
+- [x] Logout → cookie cleared → redirected to `/login`
+- [x] Expired session on a protected route → redirected to `/login?redirect=<route>` → after login returns to original route
+- [x] Mutating request without CSRF token → 403, session remains intact
+- [x] 11th login attempt in 15 minutes → 429
 
 ---
 
@@ -290,3 +290,4 @@ Render deployment, S3 setup, environment wiring, and production-like smoke check
 - [ ] Direct S3 upload works from deployed frontend origin
 - [ ] File download and inline preview work in deployed environment
 - [ ] Reconciliation job runs successfully in deployed environment
+

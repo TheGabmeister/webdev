@@ -8,13 +8,14 @@ import { registerUser, extractCookies, cookieHeader } from './helpers/auth';
 vi.mock('../src/server/s3', () => ({
   getPresignedPutUrl: vi.fn().mockResolvedValue('https://s3.example.com/presigned-put-url'),
   getPresignedGetUrl: vi.fn().mockResolvedValue('https://s3.example.com/presigned-get-url'),
-  headObject: vi.fn().mockResolvedValue({ ContentLength: 1024 }),
+  headObject: vi.fn().mockResolvedValue({ ContentLength: 1024, ContentType: 'text/plain' }),
   deleteObject: vi.fn().mockResolvedValue({}),
 }));
 
-import { headObject } from '../src/server/s3';
+import { headObject, getPresignedGetUrl } from '../src/server/s3';
 
 const mockedHeadObject = vi.mocked(headObject);
+const mockedGetPresignedGetUrl = vi.mocked(getPresignedGetUrl);
 
 interface AuthContext {
   cookies: Record<string, string>;
@@ -36,15 +37,19 @@ function postUploadUrl(auth: AuthContext, body: Record<string, unknown>) {
 }
 
 async function createUploadedFile(auth: AuthContext, overrides: Record<string, unknown> = {}) {
+  const size = typeof overrides.size === 'number' ? overrides.size : 1024;
+  const mimeType = typeof overrides.mimeType === 'string' ? overrides.mimeType : 'text/plain';
+
   const uploadRes = await postUploadUrl(auth, {
     name: 'test.txt',
-    mimeType: 'text/plain',
-    size: 1024,
+    mimeType,
+    size,
     ...overrides,
   });
   const fileId = uploadRes.body.fileId;
 
   // Confirm the file
+  mockedHeadObject.mockResolvedValueOnce({ ContentLength: size, ContentType: mimeType } as any);
   await request(app)
     .patch(`/api/files/${fileId}/confirm`)
     .set('Cookie', cookieHeader(auth.cookies))
@@ -56,7 +61,9 @@ async function createUploadedFile(auth: AuthContext, overrides: Record<string, u
 describe('Upload Lifecycle', () => {
   beforeEach(() => {
     mockedHeadObject.mockReset();
-    mockedHeadObject.mockResolvedValue({ ContentLength: 1024 } as any);
+    mockedHeadObject.mockResolvedValue({ ContentLength: 1024, ContentType: 'text/plain' } as any);
+    mockedGetPresignedGetUrl.mockReset();
+    mockedGetPresignedGetUrl.mockResolvedValue('https://s3.example.com/presigned-get-url');
   });
 
   // Upload URL request → returns { fileId, uploadUrl }, file record is pending
@@ -154,6 +161,7 @@ describe('Upload Lifecycle', () => {
       });
 
       const fileId = uploadRes.body.fileId;
+      mockedHeadObject.mockResolvedValueOnce({ ContentLength: 2048, ContentType: 'application/pdf' } as any);
 
       const res = await request(app)
         .patch(`/api/files/${fileId}/confirm`)
@@ -181,6 +189,7 @@ describe('Upload Lifecycle', () => {
       const fileId = uploadRes.body.fileId;
 
       // First confirm
+      mockedHeadObject.mockResolvedValueOnce({ ContentLength: 2048, ContentType: 'application/pdf' } as any);
       await request(app)
         .patch(`/api/files/${fileId}/confirm`)
         .set('Cookie', cookieHeader(auth.cookies))
@@ -196,6 +205,39 @@ describe('Upload Lifecycle', () => {
 
       const user = await prisma.user.findUnique({ where: { id: auth.userId } });
       expect(user!.storageUsed).toBe(BigInt(2048)); // Not 4096
+    });
+
+    it('does not double-increment storageUsed on concurrent confirm requests', async () => {
+      const auth = await authedUser();
+
+      const uploadRes = await postUploadUrl(auth, {
+        name: 'doc.pdf',
+        mimeType: 'application/pdf',
+        size: 2048,
+      });
+      const fileId = uploadRes.body.fileId;
+
+      mockedHeadObject.mockImplementation(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        return { ContentLength: 2048, ContentType: 'application/pdf' } as any;
+      });
+
+      const [first, second] = await Promise.all([
+        request(app)
+          .patch(`/api/files/${fileId}/confirm`)
+          .set('Cookie', cookieHeader(auth.cookies))
+          .set('X-CSRF-Token', auth.cookies.csrf_token),
+        request(app)
+          .patch(`/api/files/${fileId}/confirm`)
+          .set('Cookie', cookieHeader(auth.cookies))
+          .set('X-CSRF-Token', auth.cookies.csrf_token),
+      ]);
+
+      expect(first.status).toBe(200);
+      expect(second.status).toBe(200);
+
+      const user = await prisma.user.findUnique({ where: { id: auth.userId } });
+      expect(user!.storageUsed).toBe(BigInt(2048));
     });
 
     // Confirm file that doesn't exist in S3 → 409 Conflict, status remains pending
@@ -222,13 +264,40 @@ describe('Upload Lifecycle', () => {
       const file = await prisma.file.findUnique({ where: { id: fileId } });
       expect(file!.uploadStatus).toBe('pending');
     });
+
+    it('returns 409 when S3 object metadata does not match the pending file', async () => {
+      const auth = await authedUser();
+
+      const uploadRes = await postUploadUrl(auth, {
+        name: 'doc.pdf',
+        mimeType: 'application/pdf',
+        size: 2048,
+      });
+      const fileId = uploadRes.body.fileId;
+
+      mockedHeadObject.mockResolvedValueOnce({ ContentLength: 1024, ContentType: 'application/pdf' } as any);
+
+      const res = await request(app)
+        .patch(`/api/files/${fileId}/confirm`)
+        .set('Cookie', cookieHeader(auth.cookies))
+        .set('X-CSRF-Token', auth.cookies.csrf_token);
+
+      expect(res.status).toBe(409);
+
+      const file = await prisma.file.findUnique({ where: { id: fileId } });
+      expect(file!.uploadStatus).toBe('pending');
+
+      const user = await prisma.user.findUnique({ where: { id: auth.userId } });
+      expect(user!.storageUsed).toBe(BigInt(0));
+    });
   });
 
   // Download returns presigned URL with correct Content-Disposition: attachment filename
   describe('GET /api/files/:id/download', () => {
-    it('returns presigned URL for download', async () => {
+    it('returns presigned URL for download with attachment disposition', async () => {
       const auth = await authedUser();
-      const fileId = await createUploadedFile(auth, { name: 'report.pdf', mimeType: 'application/pdf' });
+      const fileId = await createUploadedFile(auth, { name: 'my report.pdf', mimeType: 'application/pdf' });
+      const file = await prisma.file.findUnique({ where: { id: fileId } });
 
       const res = await request(app)
         .get(`/api/files/${fileId}/download`)
@@ -237,6 +306,10 @@ describe('Upload Lifecycle', () => {
       expect(res.status).toBe(200);
       expect(res.body).toHaveProperty('url');
       expect(res.body.url).toContain('presigned-get-url');
+      expect(mockedGetPresignedGetUrl).toHaveBeenCalledWith(
+        file!.s3Key,
+        'attachment; filename="my%20report.pdf"',
+      );
     });
   });
 

@@ -17,6 +17,11 @@ const PREVIEWABLE_MIME_TYPES = new Set([
   'application/pdf',
 ]);
 
+function getRouteId(req: Request): string | null {
+  const value = req.params.id;
+  return typeof value === 'string' && value.length > 0 ? value : null;
+}
+
 // POST /api/files/upload-url
 router.post('/upload-url', uploadRateLimit, async (req: Request, res: Response) => {
   const userId = req.user!.userId;
@@ -91,7 +96,12 @@ router.post('/upload-url', uploadRateLimit, async (req: Request, res: Response) 
 // PATCH /api/files/:id/confirm
 router.patch('/:id/confirm', async (req: Request, res: Response) => {
   const userId = req.user!.userId;
-  const { id } = req.params;
+  const id = getRouteId(req);
+
+  if (!id) {
+    res.status(400).json({ error: 'Invalid file id' });
+    return;
+  }
 
   const file = await prisma.file.findUnique({ where: { id } });
   if (!file || file.userId !== userId) {
@@ -110,25 +120,67 @@ router.patch('/:id/confirm', async (req: Request, res: Response) => {
     return;
   }
 
+  if (file.isFolder || !file.s3Key) {
+    res.status(400).json({ error: 'File cannot be confirmed' });
+    return;
+  }
+
   // Verify S3 object exists
+  let objectMetadata: Awaited<ReturnType<typeof headObject>>;
   try {
-    await headObject(file.s3Key!);
+    objectMetadata = await headObject(file.s3Key);
   } catch {
     res.status(409).json({ error: 'File not yet available in storage' });
     return;
   }
 
-  // Atomically update file status and increment quota
-  await prisma.$transaction([
-    prisma.file.update({
-      where: { id },
-      data: { uploadStatus: 'uploaded' },
-    }),
-    prisma.user.update({
+  const expectedSize = Number(file.size);
+  const sizeMatches = objectMetadata.ContentLength === expectedSize;
+  const typeMatches = !file.mimeType || objectMetadata.ContentType === file.mimeType;
+
+  if (!sizeMatches || !typeMatches) {
+    res.status(409).json({ error: 'Uploaded file metadata does not match the pending record' });
+    return;
+  }
+
+  const outcome = await prisma.$transaction(async (tx) => {
+    const updated = await tx.file.updateMany({
+      where: {
+        id,
+        userId,
+        uploadStatus: 'pending',
+      },
+      data: {
+        uploadStatus: 'uploaded',
+      },
+    });
+
+    if (updated.count === 0) {
+      const currentFile = await tx.file.findUnique({ where: { id } });
+      if (currentFile?.userId === userId && currentFile.uploadStatus === 'uploaded') {
+        return 'already-confirmed' as const;
+      }
+
+      return 'invalid-state' as const;
+    }
+
+    await tx.user.update({
       where: { id: userId },
       data: { storageUsed: { increment: file.size } },
-    }),
-  ]);
+    });
+
+    return 'confirmed' as const;
+  });
+
+  if (outcome === 'already-confirmed') {
+    res.json({ message: 'File already confirmed' });
+    return;
+  }
+
+  if (outcome === 'invalid-state') {
+    res.status(400).json({ error: 'File cannot be confirmed' });
+    return;
+  }
 
   res.json({ message: 'File confirmed' });
 });
@@ -136,7 +188,12 @@ router.patch('/:id/confirm', async (req: Request, res: Response) => {
 // GET /api/files/:id/download
 router.get('/:id/download', async (req: Request, res: Response) => {
   const userId = req.user!.userId;
-  const { id } = req.params;
+  const id = getRouteId(req);
+
+  if (!id) {
+    res.status(400).json({ error: 'Invalid file id' });
+    return;
+  }
 
   const file = await prisma.file.findUnique({ where: { id } });
   if (!file || file.userId !== userId || file.isFolder) {
@@ -158,7 +215,12 @@ router.get('/:id/download', async (req: Request, res: Response) => {
 // GET /api/files/:id/preview
 router.get('/:id/preview', async (req: Request, res: Response) => {
   const userId = req.user!.userId;
-  const { id } = req.params;
+  const id = getRouteId(req);
+
+  if (!id) {
+    res.status(400).json({ error: 'Invalid file id' });
+    return;
+  }
 
   const file = await prisma.file.findUnique({ where: { id } });
   if (!file || file.userId !== userId || file.isFolder) {

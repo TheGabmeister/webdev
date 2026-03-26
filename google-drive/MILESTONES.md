@@ -68,7 +68,7 @@ Presigned URL upload/download flow, confirmation, quota tracking, and storage en
 ### Backend
 - [x] AWS S3 client configuration
 - [x] `POST /api/files/upload-url` — validate quota, file size, rate limit, reject trashed `parentId`; create pending record; return presigned PUT URL
-- [ ] `PATCH /api/files/:id/confirm` — idempotent; verify via `HeadObject`; flip status; increment quota once
+- [x] `PATCH /api/files/:id/confirm` — idempotent; verify via `HeadObject`; flip status; increment quota once
 - [x] `GET /api/files/:id/download` — presigned GET with `Content-Disposition: attachment`
 - [x] `GET /api/files/:id/preview` — presigned GET with `Content-Disposition: inline` (images + PDF only)
 - [x] `GET /api/storage` — return `{ used, limit }`
@@ -82,7 +82,7 @@ Presigned URL upload/download flow, confirmation, quota tracking, and storage en
 - [x] Confirm after S3 upload → status flips to `uploaded`, `storageUsed` incremented
 - [x] Confirm same file again → 200 success, `storageUsed` not incremented twice
 - [x] Confirm file that doesn't exist in S3 → `409 Conflict`, status remains `pending`
-- [ ] Download returns presigned URL with correct `Content-Disposition: attachment` filename
+- [x] Download returns presigned URL with correct `Content-Disposition: attachment` filename
 - [x] Preview for JPEG → returns `{ url, mimeType }`
 - [x] Preview for PDF → returns `{ url, mimeType }`
 - [x] Preview for .zip → 400 (not previewable)

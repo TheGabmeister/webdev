@@ -185,11 +185,11 @@ Bulk endpoints, reconciliation script, and a seed script for frontend milestone 
 - [x] Seed script runs without errors and creates expected data
 
 ### Verify (manual)
-- [ ] Bulk restore 2 trashed files → both restored; bulk restore file whose parent is deleted → restored to root
-- [ ] Bulk download 3 files → ZIP streams correctly
-- [ ] Bulk download 51 files → 400 error
-- [ ] Stale pending upload with valid S3 object → reconciliation marks uploaded once; invalid/missing object → marked failed
-- [ ] Seed script creates usable test data for subsequent milestones
+- [x] Bulk restore 2 trashed files → both restored; bulk restore file whose parent is deleted → restored to root
+- [x] Bulk download 3 files → ZIP streams correctly
+- [x] Bulk download 51 files → 400 error
+- [x] Stale pending upload with valid S3 object → reconciliation marks uploaded once; invalid/missing object → marked failed
+- [x] Seed script creates usable test data for subsequent milestones
 
 ---
 

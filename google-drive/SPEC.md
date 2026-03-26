@@ -82,6 +82,7 @@ A multi-account Google Drive clone built as a web development portfolio piece. I
 | CSRF protection | Double-submit cookie pattern |
 | Rate limiting | `express-rate-limit` |
 | ZIP downloads | `archiver` |
+| Testing | Vitest + supertest (API integration tests); S3 calls mocked in tests |
 | Deployment | Render Web Service + Render Postgres + Render Cron/Background job |
 
 ---
@@ -579,6 +580,12 @@ src/
 ---
 
 ## Testing
+
+### Strategy
+- Backend API tests use Vitest as the test runner and supertest for in-process HTTP requests against the Express app.
+- Tests run against a real test database (PostgreSQL) to verify Prisma queries, transactions, and constraints.
+- S3 SDK calls (`PutObject`, `GetObject`, `HeadObject`, `DeleteObject`, presigned URL generation) are mocked in tests. Real S3 integration is verified manually and in the deployed environment.
+- Frontend upload queue behavior (concurrency, cancel, retry) is verified manually.
 
 ### Auth and Session
 - register sets auth and CSRF cookies

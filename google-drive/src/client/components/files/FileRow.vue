@@ -50,6 +50,7 @@ function getIcon(file: FileItem): string {
 
 <template>
   <tr
+    :data-file-id="props.file.id"
     class="cursor-pointer border-b border-gray-100 select-none"
     :class="{
       'bg-blue-50': props.selected,

@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue';
 import type { FileItem } from '../../types';
 import * as filesApi from '../../api/files';
+import { useDialogFocus } from '../../composables/useDialogFocus';
 
 const props = defineProps<{
   file: FileItem;
@@ -16,6 +17,14 @@ const previewUrl = ref('');
 const mimeType = ref('');
 const loading = ref(true);
 const error = ref('');
+const dialogRef = ref<HTMLElement>();
+const closeButtonRef = ref<HTMLElement>();
+
+useDialogFocus({
+  containerRef: dialogRef,
+  initialFocusRef: closeButtonRef,
+  onClose: () => emit('close'),
+});
 
 onMounted(async () => {
   try {
@@ -35,7 +44,13 @@ const isPdf = () => mimeType.value === 'application/pdf';
 
 <template>
   <div class="fixed inset-0 bg-black/60 flex items-center justify-center z-50" @click.self="emit('close')">
-    <div class="bg-white rounded-lg shadow-xl max-w-4xl max-h-[90vh] w-full mx-4 flex flex-col" role="dialog" :aria-label="props.file.name">
+    <div
+      ref="dialogRef"
+      class="bg-white rounded-lg shadow-xl max-w-4xl max-h-[90vh] w-full mx-4 flex flex-col"
+      role="dialog"
+      :aria-label="props.file.name"
+      tabindex="-1"
+    >
       <div class="flex items-center justify-between px-4 py-3 border-b">
         <h2 class="text-sm font-medium truncate">{{ props.file.name }}</h2>
         <div class="flex items-center gap-2">
@@ -46,10 +61,11 @@ const isPdf = () => mimeType.value === 'application/pdf';
             Download
           </button>
           <button
+            ref="closeButtonRef"
             @click="emit('close')"
             class="px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
           >
-            ✕
+            Close
           </button>
         </div>
       </div>

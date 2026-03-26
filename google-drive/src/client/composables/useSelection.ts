@@ -44,6 +44,17 @@ export function useSelection() {
     }
   }
 
+  function toggleSelection(file: FileItem, index: number) {
+    const next = new Set(selectedIds.value);
+    if (next.has(file.id)) {
+      next.delete(file.id);
+    } else {
+      next.add(file.id);
+    }
+    selectedIds.value = next;
+    lastClickedIndex.value = index;
+  }
+
   function getSelectedIds(): string[] {
     return Array.from(selectedIds.value);
   }
@@ -59,6 +70,7 @@ export function useSelection() {
     isSelected,
     clearSelection,
     handleClick,
+    toggleSelection,
     getSelectedIds,
     getSelectedFiles,
   };

@@ -249,9 +249,9 @@ Upload panel, drag-and-drop, multi-select with bulk actions, keyboard accessibil
 - [x] Multi-select: click (single), Ctrl+click (toggle), Shift+click (range)
 - [x] Bulk action bar: Move to, Move to trash, Download (context-aware for trash view: Restore via `bulk-restore`, Delete forever)
 - [x] Bulk download frontend: single file → direct download, multiple → call `POST /api/files/bulk-download`, folders disabled with explanation
-- [ ] Keyboard navigation: arrow keys, Enter to open, Space to toggle select, Shift+Arrow for range, F2 rename, Shift+F10 or Context Menu key to open actions, Esc to close
-- [ ] Focus traps in modals, focus restore on close
-- [ ] Accessible labels on forms, menus, dialogs
+- [x] Keyboard navigation: arrow keys, Enter to open, Space to toggle select, Shift+Arrow for range, F2 rename, Shift+F10 or Context Menu key to open actions, Esc to close
+- [x] Focus traps in modals, focus restore on close
+- [x] Accessible labels on forms, menus, dialogs
 
 ### Verify (manual)
 - [ ] Upload 5 files → 3 active + 2 queued → all complete

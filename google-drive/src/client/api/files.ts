@@ -76,7 +76,7 @@ export function bulkDelete(ids: string[]): Promise<void> {
   });
 }
 
-export function bulkMove(ids: string[], parentId: string): Promise<void> {
+export function bulkMove(ids: string[], parentId: string | null): Promise<void> {
   return api('/api/files/bulk-move', {
     method: 'POST',
     body: JSON.stringify({ ids, parentId }),

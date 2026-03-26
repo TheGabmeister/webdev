@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, nextTick } from 'vue';
 import type { FileItem } from '../../types';
+import { useDialogFocus } from '../../composables/useDialogFocus';
 
 const props = defineProps<{
   file: FileItem;
@@ -14,14 +15,17 @@ const emit = defineEmits<{
 const name = ref(props.file.name);
 const error = ref('');
 const inputRef = ref<HTMLInputElement>();
+const dialogRef = ref<HTMLElement>();
 
 const INVALID_CHARS = /[/\\:*?"<>|]/;
+useDialogFocus({
+  containerRef: dialogRef,
+  initialFocusRef: inputRef,
+  onClose: () => emit('close'),
+});
 
 onMounted(() => {
-  nextTick(() => {
-    inputRef.value?.focus();
-    inputRef.value?.select();
-  });
+  nextTick(() => inputRef.value?.select());
 });
 
 function validate(value: string): string | null {
@@ -43,7 +47,13 @@ function handleSubmit() {
 
 <template>
   <div class="fixed inset-0 bg-black/40 flex items-center justify-center z-50" @click.self="emit('close')">
-    <div class="bg-white rounded-lg shadow-xl w-96 p-6" role="dialog" aria-label="Rename">
+    <div
+      ref="dialogRef"
+      class="bg-white rounded-lg shadow-xl w-96 p-6"
+      role="dialog"
+      aria-label="Rename"
+      tabindex="-1"
+    >
       <h2 class="text-lg font-medium mb-4">Rename</h2>
 
       <form @submit.prevent="handleSubmit">

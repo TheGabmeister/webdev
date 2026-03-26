@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, onMounted, nextTick } from 'vue';
+import { ref } from 'vue';
+import { useDialogFocus } from '../../composables/useDialogFocus';
 
 const emit = defineEmits<{
   close: [];
@@ -9,11 +10,13 @@ const emit = defineEmits<{
 const name = ref('');
 const error = ref('');
 const inputRef = ref<HTMLInputElement>();
+const dialogRef = ref<HTMLElement>();
 
 const INVALID_CHARS = /[/\\:*?"<>|]/;
-
-onMounted(() => {
-  nextTick(() => inputRef.value?.focus());
+useDialogFocus({
+  containerRef: dialogRef,
+  initialFocusRef: inputRef,
+  onClose: () => emit('close'),
 });
 
 function validate(value: string): string | null {
@@ -35,7 +38,13 @@ function handleSubmit() {
 
 <template>
   <div class="fixed inset-0 bg-black/40 flex items-center justify-center z-50" @click.self="emit('close')">
-    <div class="bg-white rounded-lg shadow-xl w-96 p-6" role="dialog" aria-label="New folder">
+    <div
+      ref="dialogRef"
+      class="bg-white rounded-lg shadow-xl w-96 p-6"
+      role="dialog"
+      aria-label="New folder"
+      tabindex="-1"
+    >
       <h2 class="text-lg font-medium mb-4">New folder</h2>
 
       <form @submit.prevent="handleSubmit">

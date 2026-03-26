@@ -55,6 +55,7 @@ const PREVIEWABLE_MIME_TYPES = new Set([
 
 const isTrashView = computed(() => filesStore.viewMode === 'trash');
 const selectedFiles = computed(() => selection.getSelectedFiles(filesStore.files));
+const blockedMoveFolderIds = computed(() => selectedFiles.value.filter((file) => file.isFolder).map((file) => file.id));
 
 // Route watcher
 watch(
@@ -172,7 +173,7 @@ async function handleRenameSubmit(name: string) {
 async function handleMoveSubmit(parentId: string | null) {
   if (bulkMoveMode.value) {
     const ids = selection.getSelectedIds();
-    await filesApi.bulkMove(ids, parentId || '');
+    await filesApi.bulkMove(ids, parentId);
     showMove.value = false;
     selection.clearSelection();
     await filesStore.refreshCurrentView();
@@ -197,11 +198,15 @@ function handleSelect(file: FileItem, index: number, event: MouseEvent | Keyboar
 
 function handleKeyAction(action: string, file: FileItem) {
   if (action === 'rename') handleRename(file);
-  else if (action === 'contextmenu') {
+  else if (action === 'toggle-select') {
+    const index = filesStore.files.findIndex((candidate) => candidate.id === file.id);
+    if (index >= 0) {
+      selection.toggleSelection(file, index);
+    }
+  } else if (action === 'contextmenu') {
     const rect = document.querySelector(`[data-file-id="${file.id}"]`)?.getBoundingClientRect();
     contextMenu.value = { file, x: rect?.right ?? 300, y: rect?.top ?? 200 };
-  }
-  else if (action === 'escape') {
+  } else if (action === 'escape') {
     selection.clearSelection();
     contextMenu.value = null;
   }
@@ -430,9 +435,9 @@ function handleDrop(e: DragEvent) {
 
     <MoveModal
       v-if="showMove && targetFile"
-      :file-id="bulkMoveMode ? '' : targetFile.id"
+      :file-id="bulkMoveMode ? undefined : targetFile.id"
       :file-name="bulkMoveMode ? `${selection.selectedCount.value} items` : targetFile.name"
-      :is-folder="bulkMoveMode ? false : targetFile.isFolder"
+      :blocked-folder-ids="bulkMoveMode ? blockedMoveFolderIds : (targetFile.isFolder ? [targetFile.id] : [])"
       @close="showMove = false"
       @move="handleMoveSubmit"
     />

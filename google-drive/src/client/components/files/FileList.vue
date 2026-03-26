@@ -43,7 +43,7 @@ function handleKeydown(e: KeyboardEvent) {
       break;
     case ' ':
       e.preventDefault();
-      emit('select', props.files[focusedIndex.value], focusedIndex.value, e);
+      emit('keyaction', 'toggle-select', props.files[focusedIndex.value]);
       break;
     case 'F2':
       e.preventDefault();

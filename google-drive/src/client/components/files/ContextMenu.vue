@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, nextTick } from 'vue';
 import type { FileItem } from '../../types';
 
 const props = defineProps<{
@@ -22,6 +22,10 @@ const emit = defineEmits<{
 }>();
 
 const menuRef = ref<HTMLElement>();
+const previousActiveElement =
+  typeof document !== 'undefined' && document.activeElement instanceof HTMLElement
+    ? document.activeElement
+    : null;
 
 function handleClickOutside(e: MouseEvent) {
   if (menuRef.value && !menuRef.value.contains(e.target as Node)) {
@@ -29,12 +33,25 @@ function handleClickOutside(e: MouseEvent) {
   }
 }
 
+function handleKeydown(e: KeyboardEvent) {
+  if (e.key === 'Escape') {
+    e.preventDefault();
+    emit('close');
+  }
+}
+
 onMounted(() => {
   document.addEventListener('click', handleClickOutside, true);
+  document.addEventListener('keydown', handleKeydown, true);
+  nextTick(() => {
+    menuRef.value?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
+  });
 });
 
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside, true);
+  document.removeEventListener('keydown', handleKeydown, true);
+  previousActiveElement?.focus();
 });
 </script>
 
@@ -44,6 +61,7 @@ onUnmounted(() => {
     class="fixed bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50 min-w-[180px]"
     :style="{ left: `${x}px`, top: `${y}px` }"
     role="menu"
+    aria-label="File actions"
   >
     <template v-if="isTrashView">
       <button

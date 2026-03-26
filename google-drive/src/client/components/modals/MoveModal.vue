@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import * as filesApi from '../../api/files';
 import FolderTreeNode from './FolderTreeNode.vue';
 import type { FolderNode } from './FolderTreeNode.vue';
+import { useDialogFocus } from '../../composables/useDialogFocus';
 
 const props = defineProps<{
-  fileId: string;
+  fileId?: string;
   fileName: string;
-  isFolder: boolean;
+  blockedFolderIds?: string[];
 }>();
 
 const emit = defineEmits<{
@@ -26,18 +27,26 @@ const root = ref<FolderNode>({
 
 const selected = ref<string | null>(null);
 const error = ref('');
+const dialogRef = ref<HTMLElement>();
+
+const blockedFolderIds = computed(() => new Set(props.blockedFolderIds ?? []));
+
+useDialogFocus({
+  containerRef: dialogRef,
+  onClose: () => emit('close'),
+});
 
 onMounted(async () => {
   await loadChildren(root.value);
 });
 
 async function isDescendantFolder(folderId: string): Promise<boolean> {
-  if (!props.isFolder) {
+  if (blockedFolderIds.value.size === 0) {
     return false;
   }
 
   const path = await filesApi.getFilePath(folderId);
-  return path.some((folder) => folder.id === props.fileId);
+  return path.some((folder) => folder.id && blockedFolderIds.value.has(folder.id));
 }
 
 async function loadChildren(node: FolderNode) {
@@ -53,7 +62,7 @@ async function loadChildren(node: FolderNode) {
       children: null as FolderNode[] | null,
       expanded: false,
       loading: false,
-      disabled: folder.id === props.fileId || await isDescendantFolder(folder.id),
+      disabled: blockedFolderIds.value.has(folder.id) || await isDescendantFolder(folder.id),
     })));
 
     node.children = candidateNodes.filter((folder) => !folder.disabled);
@@ -83,7 +92,13 @@ function handleMove() {
 
 <template>
   <div class="fixed inset-0 bg-black/40 flex items-center justify-center z-50" @click.self="emit('close')">
-    <div class="bg-white rounded-lg shadow-xl w-96 p-6 max-h-[70vh] flex flex-col" role="dialog" aria-label="Move to">
+    <div
+      ref="dialogRef"
+      class="bg-white rounded-lg shadow-xl w-96 p-6 max-h-[70vh] flex flex-col"
+      role="dialog"
+      aria-label="Move to"
+      tabindex="-1"
+    >
       <h2 class="text-lg font-medium mb-2">Move "{{ fileName }}"</h2>
 
       <div class="flex-1 overflow-auto border border-gray-200 rounded-md p-2 my-2 min-h-[200px]">

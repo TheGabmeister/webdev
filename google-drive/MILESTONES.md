@@ -147,13 +147,13 @@ Folder CRUD, listing, search, starred, breadcrumbs, trash/restore with cascade l
 - [x] Permanent delete folder → all descendant rows and S3 objects deleted, `storageUsed` decremented for each file
 
 ### Verify (manual)
-- [ ] Create nested folders → list contents → breadcrumb path is correct
-- [ ] `GET /api/files?parentId=<id>&foldersOnly=true` → returns folders only
-- [ ] Trash a folder → descendants hidden from list and search → restore → descendants reappear (except individually trashed ones)
-- [ ] `GET /api/files/trash` → shows only top-level trashed items, not inherited-trash descendants
-- [ ] Permanent delete folder → all descendant rows and S3 objects gone, quota decremented
-- [ ] `GET /api/storage` increases after upload confirm and decreases after permanent delete
-- [ ] Attempt to create folder / upload / move into a trashed folder → 400
+- [x] Create nested folders → list contents → breadcrumb path is correct
+- [x] `GET /api/files?parentId=<id>&foldersOnly=true` → returns folders only
+- [x] Trash a folder → descendants hidden from list and search → restore → descendants reappear (except individually trashed ones)
+- [x] `GET /api/files/trash` → shows only top-level trashed items, not inherited-trash descendants
+- [x] Permanent delete folder → all descendant rows and S3 objects gone, quota decremented
+- [x] `GET /api/storage` increases after upload confirm and decreases after permanent delete
+- [x] Attempt to create folder / upload / move into a trashed folder → 400
 
 ---
 
@@ -162,27 +162,27 @@ Folder CRUD, listing, search, starred, breadcrumbs, trash/restore with cascade l
 Bulk endpoints, reconciliation script, and a seed script for frontend milestone testing.
 
 ### Backend
-- [ ] `POST /api/files/bulk-trash` — bulk trash. Body: `{ ids: string[] }`
-- [ ] `POST /api/files/bulk-restore` — bulk restore. Body: `{ ids: string[] }`. Falls back to root per item if parent gone
-- [ ] `POST /api/files/bulk-delete` — bulk permanent delete. Body: `{ ids: string[] }`
-- [ ] `POST /api/files/bulk-move` — bulk move. Body: `{ ids: string[], parentId: string }`
-- [ ] `POST /api/files/bulk-download` — stream ZIP via `archiver`; reject >50 files or >500 MB; reject folders
-- [ ] Orphaned upload reconciliation script (standalone, runnable via Render Cron)
-- [ ] Seed script: creates a test user with nested folders, sample files (via presigned URL flow), starred items, and trashed items for frontend testing
+- [x] `POST /api/files/bulk-trash` — bulk trash. Body: `{ ids: string[] }`
+- [x] `POST /api/files/bulk-restore` — bulk restore. Body: `{ ids: string[] }`. Falls back to root per item if parent gone
+- [x] `POST /api/files/bulk-delete` — bulk permanent delete. Body: `{ ids: string[] }`
+- [x] `POST /api/files/bulk-move` — bulk move. Body: `{ ids: string[], parentId: string }`
+- [x] `POST /api/files/bulk-download` — stream ZIP via `archiver`; reject >50 files or >500 MB; reject folders
+- [x] Orphaned upload reconciliation script (standalone, runnable via Render Cron)
+- [x] Seed script: creates a test user with nested folders, sample files (via presigned URL flow), starred items, and trashed items for frontend testing
 
 ### Tests
-- [ ] Bulk trash 3 files → all three have `trashedAt` set
-- [ ] Bulk restore 2 trashed files → both restored
-- [ ] Bulk restore file whose parent is deleted → restored to root
-- [ ] Bulk delete 2 files → DB rows and S3 objects gone, quota decremented
-- [ ] Bulk move 3 files to a new folder → all three have updated `parentId`
-- [ ] Bulk download 3 files → ZIP streams with correct filenames
-- [ ] Bulk download 51 files → 400
-- [ ] Bulk download over 500 MB total → 400
-- [ ] Bulk download with a folder in selection → 400
-- [ ] Reconciliation: stale pending upload with valid S3 object → marked `uploaded`, quota incremented once
-- [ ] Reconciliation: stale pending upload with missing S3 object → marked `failed`
-- [ ] Seed script runs without errors and creates expected data
+- [x] Bulk trash 3 files → all three have `trashedAt` set
+- [x] Bulk restore 2 trashed files → both restored
+- [x] Bulk restore file whose parent is deleted → restored to root
+- [x] Bulk delete 2 files → DB rows and S3 objects gone, quota decremented
+- [x] Bulk move 3 files to a new folder → all three have updated `parentId`
+- [x] Bulk download 3 files → ZIP streams with correct filenames
+- [x] Bulk download 51 files → 400
+- [x] Bulk download over 500 MB total → 400
+- [x] Bulk download with a folder in selection → 400
+- [x] Reconciliation: stale pending upload with valid S3 object → marked `uploaded`, quota incremented once
+- [x] Reconciliation: stale pending upload with missing S3 object → marked `failed`
+- [x] Seed script runs without errors and creates expected data
 
 ### Verify (manual)
 - [ ] Bulk restore 2 trashed files → both restored; bulk restore file whose parent is deleted → restored to root

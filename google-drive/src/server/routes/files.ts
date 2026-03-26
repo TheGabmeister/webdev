@@ -1,9 +1,9 @@
 import { Router, Request, Response } from 'express';
-import { randomUUID } from 'crypto';
-import path from 'path';
+import archiver from 'archiver';
 import prisma from '../db.js';
 import { uploadRateLimit } from '../middleware/rateLimit.js';
-import { getPresignedPutUrl, getPresignedGetUrl, headObject, deleteObject } from '../s3.js';
+import { getPresignedGetUrl, deleteObject, getObjectStream } from '../s3.js';
+import { createPendingUploadRecord, confirmPendingUpload } from '../services/uploads.js';
 
 const router = Router();
 
@@ -84,25 +84,13 @@ router.post('/upload-url', uploadRateLimit, async (req: Request, res: Response) 
     }
   }
 
-  // Generate S3 key
-  const ext = path.extname(name).slice(1) || 'bin';
-  const s3Key = `${userId}/${randomUUID()}.${ext}`;
-
-  // Create pending file record
-  const file = await prisma.file.create({
-    data: {
-      name,
-      mimeType,
-      size: BigInt(size),
-      s3Key,
-      uploadStatus: 'pending',
-      userId,
-      parentId: parentId || null,
-    },
+  const { file, uploadUrl } = await createPendingUploadRecord({
+    userId,
+    name,
+    mimeType,
+    size,
+    parentId: parentId || null,
   });
-
-  // Generate presigned PUT URL
-  const uploadUrl = await getPresignedPutUrl(s3Key, mimeType, size);
 
   res.status(201).json({
     fileId: file.id,
@@ -200,6 +188,242 @@ router.get('/trash', async (req: Request, res: Response) => {
   });
 
   res.json(files.map(serializeFile));
+});
+
+// POST /api/files/bulk-trash
+router.post('/bulk-trash', async (req: Request, res: Response) => {
+  const userId = req.user!.userId;
+  const { ids } = req.body;
+
+  if (!Array.isArray(ids) || ids.length === 0) {
+    res.status(400).json({ error: 'ids array is required' });
+    return;
+  }
+
+  const now = new Date();
+  for (const id of ids) {
+    const file = await prisma.file.findUnique({ where: { id } });
+    if (!file || file.userId !== userId) continue;
+
+    await prisma.file.update({
+      where: { id },
+      data: { trashedAt: now },
+    });
+
+    if (file.isFolder) {
+      await cascadeTrashToDescendants(id, id);
+    }
+  }
+
+  res.json({ message: 'Items moved to trash' });
+});
+
+// POST /api/files/bulk-restore
+router.post('/bulk-restore', async (req: Request, res: Response) => {
+  const userId = req.user!.userId;
+  const { ids } = req.body;
+
+  if (!Array.isArray(ids) || ids.length === 0) {
+    res.status(400).json({ error: 'ids array is required' });
+    return;
+  }
+
+  for (const id of ids) {
+    const file = await prisma.file.findUnique({ where: { id } });
+    if (!file || file.userId !== userId) continue;
+
+    let parentId = file.parentId;
+    if (parentId) {
+      const parent = await prisma.file.findUnique({ where: { id: parentId } });
+      if (!parent) parentId = null;
+    }
+
+    await prisma.file.update({
+      where: { id },
+      data: { trashedAt: null, parentId },
+    });
+
+    if (file.isFolder) {
+      await prisma.file.updateMany({
+        where: { trashedByAncestorId: id },
+        data: { trashedByAncestorId: null },
+      });
+    }
+  }
+
+  res.json({ message: 'Items restored' });
+});
+
+// POST /api/files/bulk-delete
+router.post('/bulk-delete', async (req: Request, res: Response) => {
+  const userId = req.user!.userId;
+  const { ids } = req.body;
+
+  if (!Array.isArray(ids) || ids.length === 0) {
+    res.status(400).json({ error: 'ids array is required' });
+    return;
+  }
+
+  for (const id of ids) {
+    const file = await prisma.file.findUnique({ where: { id } });
+    if (!file || file.userId !== userId) continue;
+
+    if (file.isFolder) {
+      const allDescendants = await collectDescendants(id);
+      const filesToDelete = allDescendants.filter(f => !f.isFolder && f.s3Key && f.uploadStatus === 'uploaded');
+
+      let totalSize = BigInt(0);
+      for (const f of filesToDelete) {
+        totalSize += f.size;
+      }
+
+      for (const f of filesToDelete) {
+        try { await deleteObject(f.s3Key!); } catch { /* continue */ }
+      }
+
+      const allIds = [...allDescendants.map(f => f.id), id];
+      await prisma.$transaction([
+        prisma.file.deleteMany({ where: { id: { in: allIds } } }),
+        ...(totalSize > BigInt(0)
+          ? [prisma.user.update({ where: { id: userId }, data: { storageUsed: { decrement: totalSize } } })]
+          : []),
+      ]);
+    } else {
+      if (file.s3Key && file.uploadStatus === 'uploaded') {
+        try { await deleteObject(file.s3Key); } catch { /* continue */ }
+      }
+      const decrementSize = file.uploadStatus === 'uploaded' ? file.size : BigInt(0);
+      await prisma.$transaction([
+        prisma.file.delete({ where: { id } }),
+        ...(decrementSize > BigInt(0)
+          ? [prisma.user.update({ where: { id: userId }, data: { storageUsed: { decrement: decrementSize } } })]
+          : []),
+      ]);
+    }
+  }
+
+  res.json({ message: 'Items permanently deleted' });
+});
+
+// POST /api/files/bulk-move
+router.post('/bulk-move', async (req: Request, res: Response) => {
+  const userId = req.user!.userId;
+  const { ids, parentId } = req.body;
+
+  if (!Array.isArray(ids) || ids.length === 0) {
+    res.status(400).json({ error: 'ids array is required' });
+    return;
+  }
+
+  if (parentId) {
+    const target = await prisma.file.findUnique({ where: { id: parentId } });
+    if (!target || !target.isFolder || target.userId !== userId) {
+      res.status(400).json({ error: 'Invalid target folder' });
+      return;
+    }
+    if (target.trashedAt || target.trashedByAncestorId) {
+      res.status(400).json({ error: 'Cannot move into a trashed folder' });
+      return;
+    }
+  }
+
+  const items = await prisma.file.findMany({
+    where: {
+      id: { in: ids },
+      userId,
+    },
+  });
+
+  for (const item of items) {
+    if (!parentId || !item.isFolder) {
+      continue;
+    }
+
+    if (parentId === item.id) {
+      res.status(400).json({ error: 'Cannot move item into itself' });
+      return;
+    }
+
+    let checkId: string | null = parentId;
+    while (checkId) {
+      if (checkId === item.id) {
+        res.status(400).json({ error: 'Cannot move folder into its own descendant' });
+        return;
+      }
+
+      const ancestor = await prisma.file.findUnique({ where: { id: checkId } });
+      if (!ancestor) {
+        break;
+      }
+      checkId = ancestor.parentId;
+    }
+  }
+
+  await prisma.file.updateMany({
+    where: {
+      id: { in: ids },
+      userId,
+    },
+    data: { parentId: parentId || null },
+  });
+
+  res.json({ message: 'Items moved' });
+});
+
+const BULK_DOWNLOAD_MAX_FILES = 50;
+const BULK_DOWNLOAD_MAX_SIZE = 500 * 1024 * 1024; // 500 MB
+
+// POST /api/files/bulk-download
+router.post('/bulk-download', async (req: Request, res: Response) => {
+  const userId = req.user!.userId;
+  const { ids } = req.body;
+
+  if (!Array.isArray(ids) || ids.length === 0) {
+    res.status(400).json({ error: 'ids array is required' });
+    return;
+  }
+
+  const files = await prisma.file.findMany({
+    where: { id: { in: ids }, userId },
+  });
+
+  // Check for folders
+  if (files.some(f => f.isFolder)) {
+    res.status(400).json({ error: 'Bulk download does not support folders' });
+    return;
+  }
+
+  if (files.length > BULK_DOWNLOAD_MAX_FILES) {
+    res.status(400).json({ error: `Cannot download more than ${BULK_DOWNLOAD_MAX_FILES} files at once` });
+    return;
+  }
+
+  const totalSize = files.reduce((sum, f) => sum + Number(f.size), 0);
+  if (totalSize > BULK_DOWNLOAD_MAX_SIZE) {
+    res.status(400).json({ error: 'Total download size exceeds 500 MB limit' });
+    return;
+  }
+
+  // Stream ZIP
+  res.setHeader('Content-Type', 'application/zip');
+  res.setHeader('Content-Disposition', 'attachment; filename="download.zip"');
+
+  const archive = archiver('zip', { zlib: { level: 5 } });
+  archive.pipe(res);
+
+  for (const file of files) {
+    if (!file.s3Key) continue;
+    try {
+      const stream = await getObjectStream(file.s3Key);
+      if (stream) {
+        archive.append(stream as any, { name: file.name });
+      }
+    } catch {
+      // Skip files that can't be fetched
+    }
+  }
+
+  await archive.finalize();
 });
 
 // GET /api/files — list folder contents
@@ -540,82 +764,30 @@ router.patch('/:id/confirm', async (req: Request, res: Response) => {
     return;
   }
 
-  const file = await prisma.file.findUnique({ where: { id } });
-  if (!file || file.userId !== userId) {
+  const result = await confirmPendingUpload(id, userId);
+
+  if (result === 'already-confirmed') {
+    res.json({ message: 'File already confirmed' });
+    return;
+  }
+
+  if (result === 'not-found') {
     res.status(404).json({ error: 'File not found' });
     return;
   }
 
-  // Idempotent: if already uploaded, return success
-  if (file.uploadStatus === 'uploaded') {
-    res.json({ message: 'File already confirmed' });
-    return;
-  }
-
-  if (file.uploadStatus !== 'pending') {
+  if (result === 'invalid-state') {
     res.status(400).json({ error: 'File cannot be confirmed' });
     return;
   }
 
-  if (file.isFolder || !file.s3Key) {
-    res.status(400).json({ error: 'File cannot be confirmed' });
-    return;
-  }
-
-  // Verify S3 object exists
-  let objectMetadata: Awaited<ReturnType<typeof headObject>>;
-  try {
-    objectMetadata = await headObject(file.s3Key);
-  } catch {
+  if (result === 'missing-object') {
     res.status(409).json({ error: 'File not yet available in storage' });
     return;
   }
 
-  const expectedSize = Number(file.size);
-  const sizeMatches = objectMetadata.ContentLength === expectedSize;
-  const typeMatches = !file.mimeType || objectMetadata.ContentType === file.mimeType;
-
-  if (!sizeMatches || !typeMatches) {
+  if (result === 'metadata-mismatch') {
     res.status(409).json({ error: 'Uploaded file metadata does not match the pending record' });
-    return;
-  }
-
-  const outcome = await prisma.$transaction(async (tx) => {
-    const updated = await tx.file.updateMany({
-      where: {
-        id,
-        userId,
-        uploadStatus: 'pending',
-      },
-      data: {
-        uploadStatus: 'uploaded',
-      },
-    });
-
-    if (updated.count === 0) {
-      const currentFile = await tx.file.findUnique({ where: { id } });
-      if (currentFile?.userId === userId && currentFile.uploadStatus === 'uploaded') {
-        return 'already-confirmed' as const;
-      }
-
-      return 'invalid-state' as const;
-    }
-
-    await tx.user.update({
-      where: { id: userId },
-      data: { storageUsed: { increment: file.size } },
-    });
-
-    return 'confirmed' as const;
-  });
-
-  if (outcome === 'already-confirmed') {
-    res.json({ message: 'File already confirmed' });
-    return;
-  }
-
-  if (outcome === 'invalid-state') {
-    res.status(400).json({ error: 'File cannot be confirmed' });
     return;
   }
 

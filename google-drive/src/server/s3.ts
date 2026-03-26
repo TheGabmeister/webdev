@@ -48,3 +48,31 @@ export async function deleteObject(key: string) {
   });
   return s3Client.send(command);
 }
+
+export async function getObjectStream(key: string) {
+  const command = new GetObjectCommand({
+    Bucket: getBucket(),
+    Key: key,
+  });
+  const response = await s3Client.send(command);
+  return response.Body;
+}
+
+export async function uploadViaPresignedUrl(
+  url: string,
+  body: Buffer,
+  contentType: string,
+) {
+  const response = await fetch(url, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': contentType,
+      'Content-Length': String(body.length),
+    },
+    body: new Uint8Array(body),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Presigned upload failed with status ${response.status}`);
+  }
+}

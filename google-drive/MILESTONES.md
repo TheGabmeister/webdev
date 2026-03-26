@@ -15,7 +15,7 @@ Scaffolding, database, auth system, and auth UI.
 - [ ] Implement `POST /api/auth/register` and `POST /api/auth/login` with bcrypt
 - [ ] Implement `GET /api/auth/session` for SPA bootstrap
 - [ ] Implement `POST /api/auth/logout`
-- [ ] JWT in `drive_session` cookie with `HttpOnly`, `Secure`, `SameSite=Lax`, and path `/`
+- [ ] JWT in `drive_session` cookie with `HttpOnly`, `SameSite=Lax`, path `/`, and conditional `Secure` flag (HTTPS only in production; omitted for localhost)
 - [ ] CSRF double-submit cookie pattern (`csrf_token` cookie + `X-CSRF-Token` header)
 - [ ] Auth middleware on `/api/*` (exclude `/api/auth/*`)
 - [ ] Rate limiting on register, login
@@ -49,22 +49,23 @@ All backend file operations. No frontend beyond what's needed to manually test.
 
 ### Backend
 - [ ] AWS S3 client configuration
-- [ ] `POST /api/files/upload-url` — validate quota, file size, rate limit; create pending record; return presigned PUT URL
+- [ ] `POST /api/files/upload-url` — validate quota, file size, rate limit, reject trashed `parentId`; create pending record; return presigned PUT URL
 - [ ] `PATCH /api/files/:id/confirm` — idempotent; verify via `HeadObject`; flip status; increment quota once
 - [ ] `GET /api/files/:id/download` — presigned GET with `Content-Disposition: attachment`
 - [ ] `GET /api/files/:id/preview` — presigned GET with `Content-Disposition: inline` (images + PDF only)
-- [ ] `POST /api/files/folder` — create folder with invalid-character validation, trimmed names, and reject empty-after-trim input
+- [ ] `POST /api/files/folder` — create folder with invalid-character validation, trimmed names, reject empty-after-trim input, and reject trashed `parentId`
 - [ ] `GET /api/files` — list folder contents; exclude trashed; folders first, alphabetical; support `foldersOnly=true` for lazy-loaded move modal
 - [ ] `GET /api/files/:id` — single item metadata
 - [ ] `GET /api/files/:id/path` — breadcrumb ancestor chain
 - [ ] `GET /api/files/search` — `ILIKE` filename search, exclude trashed
 - [ ] `GET /api/files/starred` — all visible starred items
 - [ ] `GET /api/files/trash` — top-level trashed items only
-- [ ] `PATCH /api/files/:id` — rename, star/unstar, move (with cycle detection for folders)
+- [ ] `PATCH /api/files/:id` — rename, star/unstar, move (with cycle detection for folders; reject trashed target parent)
 - [ ] `PATCH /api/files/:id/trash` — set `trashedAt`; cascade `trashedByAncestorId` for folders
 - [ ] `PATCH /api/files/:id/restore` — clear direct trash; clear descendant ancestor-trash; fall back to root if parent gone
 - [ ] `DELETE /api/files/:id` — permanent delete; recursive for folders; remove S3 objects; decrement quota
-- [ ] `POST /api/files/bulk-trash`, `bulk-delete`, `bulk-move`
+- [ ] `POST /api/files/bulk-trash`, `bulk-restore`, `bulk-delete`, `bulk-move`
+- [ ] `POST /api/files/bulk-download` — stream ZIP via `archiver`; reject >50 files or >500 MB; reject folders
 - [ ] `GET /api/storage` — return `{ used, limit }`
 - [ ] Orphaned upload reconciliation script (standalone, runnable via Render Cron)
 
@@ -79,6 +80,10 @@ All backend file operations. No frontend beyond what's needed to manually test.
 - [ ] Permanent delete folder → all descendant rows and S3 objects gone, quota decremented
 - [ ] `GET /api/storage` increases after upload confirm and decreases after permanent delete
 - [ ] Stale pending upload with valid S3 object → reconciliation marks uploaded once; invalid/missing object → marked failed
+- [ ] Attempt to create folder / upload / move into a trashed folder → 400
+- [ ] Bulk restore 2 trashed files → both restored; bulk restore file whose parent is deleted → restored to root
+- [ ] Bulk download 3 files → ZIP streams correctly
+- [ ] Bulk download 51 files → 400 error
 - [ ] 101st upload URL request in 15 minutes → 429
 
 ---
@@ -86,6 +91,8 @@ All backend file operations. No frontend beyond what's needed to manually test.
 ## Milestone 3 — Core Frontend
 
 Main drive UI: navigation, file list, folders, context menu, search, starred, trash.
+
+> **Note:** M3 has no upload UI. Verification assumes test files are created via M2's API (curl or a seed script).
 
 ### Frontend
 - [ ] App layout: sidebar + header + main content area (`DriveView`)
@@ -133,11 +140,10 @@ Upload panel, drag-and-drop, multi-select with bulk actions, keyboard accessibil
 - [ ] New > Upload file button triggers file picker
 - [ ] Quota check before upload; show error when over limit
 - [ ] Multi-select: click (single), Ctrl+click (toggle), Shift+click (range)
-- [ ] Bulk action bar: Move to, Move to trash, Download (context-aware for trash view: Restore, Delete forever)
+- [ ] Bulk action bar: Move to, Move to trash, Download (context-aware for trash view: Restore via `bulk-restore`, Delete forever)
 - [ ] File context menu adds Move to
 - [ ] Move modal: lazy-loaded folder tree, prevents cycles
-- [ ] `POST /api/files/bulk-download` integration: stream ZIP via `archiver`; reject >50 files or >500 MB; reject folders
-- [ ] Bulk download: single file → direct download, multiple → ZIP, folders disabled with explanation
+- [ ] Bulk download frontend: single file → direct download, multiple → call `POST /api/files/bulk-download`, folders disabled with explanation
 - [ ] Keyboard navigation: arrow keys, Enter to open, Space to toggle select, Shift+Arrow for range, F2 rename, Shift+F10 or Context Menu key to open actions, Esc to close
 - [ ] Focus traps in modals, focus restore on close
 - [ ] Accessible labels on forms, menus, dialogs
@@ -166,12 +172,12 @@ Upload panel, drag-and-drop, multi-select with bulk actions, keyboard accessibil
 Render deployment, S3 setup, environment wiring, and production-like smoke checks.
 
 ### Backend and Infra
-- [ ] Configure environment variables required by the spec: `DATABASE_URL`, `JWT_SECRET`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `S3_BUCKET_NAME`, `APP_ORIGIN`, `PORT`
-- [ ] Configure Express to serve the built SPA and API from the same origin in Render
-- [ ] Configure S3 bucket with private access and CORS for `PUT` and `GET` from `APP_ORIGIN`
-- [ ] Configure IAM permissions for `PutObject`, `GetObject`, `DeleteObject`, and `HeadObject`
-- [ ] Configure Render build/start pipeline to run Prisma generate, Prisma migrate deploy, Vite build, and TypeScript compilation
-- [ ] Configure Render Cron Job or background worker for orphaned upload reconciliation
+- [ ] Create `render.yaml` with web service, Postgres, and cron job definitions
+- [ ] Configure environment variables in Render dashboard: `DATABASE_URL`, `JWT_SECRET`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `S3_BUCKET_NAME`, `APP_ORIGIN`, `PORT`
+- [ ] Configure S3 bucket with private access and CORS for `PUT` and `GET` from production `APP_ORIGIN`
+- [ ] Configure IAM user with scoped policy: `PutObject`, `GetObject`, `DeleteObject`, `HeadObject`
+- [ ] Configure Render build/start pipeline: `npm install` → `prisma generate` → `prisma migrate deploy` → `vite build` → `tsc`
+- [ ] Configure Render Cron Job for orphaned upload reconciliation
 
 ### Verify
 - [ ] Deployed app serves SPA and API from the same origin

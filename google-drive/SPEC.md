@@ -198,7 +198,7 @@ model File {
 - Stored in cookie:
   - name: `drive_session`
   - `HttpOnly`
-  - `Secure`
+  - `Secure` (production only; omitted in local development to allow HTTP on localhost)
   - `SameSite=Lax`
   - path `/`
 - No token revocation is implemented beyond expiry. This is an accepted portfolio tradeoff.
@@ -321,16 +321,17 @@ All file routes require a valid session cookie. All mutating file routes also re
 | GET | `/api/files/:id/path` | Return breadcrumb ancestors from root to parent. |
 | GET | `/api/files/:id/download` | Return `{ url }` for presigned attachment download. |
 | GET | `/api/files/:id/preview` | Return `{ url, mimeType }` for inline preview of raster images and PDFs only. |
-| POST | `/api/files/folder` | Create folder. Body: `{ name, parentId? }`. |
-| POST | `/api/files/upload-url` | Create pending record and return `{ fileId, uploadUrl }`. Body: `{ name, mimeType, size, parentId? }`. Enforces auth, CSRF, file limit, quota, and rate limit. |
+| POST | `/api/files/folder` | Create folder. Body: `{ name, parentId? }`. Rejects if `parentId` refers to a trashed folder. |
+| POST | `/api/files/upload-url` | Create pending record and return `{ fileId, uploadUrl }`. Body: `{ name, mimeType, size, parentId? }`. Enforces auth, CSRF, file limit, quota, and rate limit. Rejects if `parentId` refers to a trashed folder. |
 | PATCH | `/api/files/:id/confirm` | Idempotently finalize an uploaded file and increment quota exactly once. |
-| PATCH | `/api/files/:id` | Rename, star/unstar, or move. Body: `{ name?, starred?, parentId? }`. |
+| PATCH | `/api/files/:id` | Rename, star/unstar, or move. Body: `{ name?, starred?, parentId? }`. Move rejects if target `parentId` is trashed or would create a cycle. |
 | PATCH | `/api/files/:id/trash` | Move an item to trash. Cascades `trashedByAncestorId` when the item is a folder. |
 | PATCH | `/api/files/:id/restore` | Restore an item from trash. Clears direct trash on the item and clears descendant `trashedByAncestorId` only when restoring a folder. Falls back to root if current parent no longer exists. |
 | DELETE | `/api/files/:id` | Permanently delete one item. Recursively deletes descendants and S3 objects for folders. |
 | POST | `/api/files/bulk-trash` | Bulk trash. Body: `{ ids: string[] }`. |
 | POST | `/api/files/bulk-delete` | Bulk permanent delete. Body: `{ ids: string[] }`. |
 | POST | `/api/files/bulk-move` | Bulk move. Body: `{ ids: string[], parentId: string }`. |
+| POST | `/api/files/bulk-restore` | Bulk restore from trash. Body: `{ ids: string[] }`. Falls back to root per item if parent no longer exists. |
 | POST | `/api/files/bulk-download` | Stream a ZIP for multiple selected files. Rejects requests over `50 files` or `500 MB` total. |
 
 ### Storage Route

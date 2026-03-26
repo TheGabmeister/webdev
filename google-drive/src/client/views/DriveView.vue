@@ -154,8 +154,8 @@ async function handleRenameSubmit(name: string) {
 
 async function handleMoveSubmit(parentId: string | null) {
   if (!targetFile.value) return;
-  showMove.value = false;
   await filesStore.moveFile(targetFile.value.id, parentId);
+  showMove.value = false;
 }
 
 function handleBreadcrumbNav(folderId: string | null) {

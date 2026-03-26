@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import * as filesApi from '../../api/files';
-import type { FileItem } from '../../types';
 
 const props = defineProps<{
   fileId: string;
@@ -20,6 +19,7 @@ interface FolderNode {
   children: FolderNode[] | null; // null means not loaded yet
   expanded: boolean;
   loading: boolean;
+  disabled: boolean;
 }
 
 const root = ref<FolderNode>({
@@ -28,30 +28,45 @@ const root = ref<FolderNode>({
   children: null,
   expanded: true,
   loading: false,
+  disabled: false,
 });
 
 const selected = ref<string | null>(null);
+const error = ref('');
 
 onMounted(async () => {
   await loadChildren(root.value);
 });
 
+async function isDescendantFolder(folderId: string): Promise<boolean> {
+  if (!props.isFolder) {
+    return false;
+  }
+
+  const path = await filesApi.getFilePath(folderId);
+  return path.some((folder) => folder.id === props.fileId);
+}
+
 async function loadChildren(node: FolderNode) {
-  if (node.children !== null) return;
+  if (node.children !== null || node.loading) return;
   node.loading = true;
+  error.value = '';
+
   try {
     const folders = await filesApi.listFiles(node.id, true);
-    node.children = folders
-      .filter(f => f.id !== props.fileId) // Exclude the file being moved
-      .map(f => ({
-        id: f.id,
-        name: f.name,
-        children: null,
-        expanded: false,
-        loading: false,
-      }));
+    const candidateNodes = await Promise.all(folders.map(async (folder) => ({
+      id: folder.id,
+      name: folder.name,
+      children: null,
+      expanded: false,
+      loading: false,
+      disabled: folder.id === props.fileId || await isDescendantFolder(folder.id),
+    })));
+
+    node.children = candidateNodes.filter((folder) => !folder.disabled);
   } catch {
     node.children = [];
+    error.value = 'Failed to load available folders';
   }
   node.loading = false;
 }
@@ -65,6 +80,7 @@ async function toggleExpand(node: FolderNode) {
 
 function selectFolder(id: string | null) {
   selected.value = id;
+  error.value = '';
 }
 
 function handleMove() {
@@ -86,6 +102,8 @@ function handleMove() {
           @toggle="toggleExpand"
         />
       </div>
+
+      <p v-if="error" class="text-sm text-red-600">{{ error }}</p>
 
       <div class="flex justify-end gap-2 mt-2">
         <button

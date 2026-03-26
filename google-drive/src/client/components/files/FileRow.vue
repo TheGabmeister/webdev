@@ -10,6 +10,18 @@ const emit = defineEmits<{
   contextmenu: [event: MouseEvent, file: FileItem];
 }>();
 
+function handleClick() {
+  if (props.file.isFolder) {
+    emit('open', props.file);
+  }
+}
+
+function handleDoubleClick() {
+  if (!props.file.isFolder) {
+    emit('open', props.file);
+  }
+}
+
 function formatSize(sizeStr: string): string {
   const size = Number(sizeStr);
   if (size === 0) return '—';
@@ -40,7 +52,8 @@ function getIcon(file: FileItem): string {
 <template>
   <tr
     class="hover:bg-gray-50 cursor-pointer border-b border-gray-100 select-none"
-    @dblclick="emit('open', props.file)"
+    @click="handleClick"
+    @dblclick="handleDoubleClick"
     @contextmenu.prevent="emit('contextmenu', $event, props.file)"
   >
     <td class="px-4 py-2 flex items-center gap-2 text-sm">

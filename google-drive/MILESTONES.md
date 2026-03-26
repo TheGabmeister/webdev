@@ -200,24 +200,24 @@ Main drive UI: navigation, file list, folders, context menu, search, starred, tr
 > **Note:** M5 has no upload UI. Verification assumes test files are created via M4's seed script.
 
 ### Frontend
-- [ ] App layout: sidebar + header + main content area (`DriveView`)
-- [ ] Sidebar: New button (dropdown), nav links (My Drive, Starred, Trash), storage usage bar
-- [ ] Storage usage fetch from `GET /api/storage`, with refresh after quota-affecting mutations
-- [ ] File list component: columns (name, modified, size), file type icons, empty state
-- [ ] Folder navigation: click folder → route to `/drive/folder/:id` → fetch contents
-- [ ] Breadcrumbs from `/api/files/:id/path`
-- [ ] Context menu (right-click): Open, Download, Rename, Star/Unstar, Move to, Move to trash
-- [ ] Trash view context menu: Restore, Delete forever
-- [ ] Empty trash button using trash listing + `POST /api/files/bulk-delete` (no separate endpoint)
-- [ ] New folder modal with invalid-character validation, trimmed names, and reject empty-after-trim input
-- [ ] Rename modal with invalid-character validation, trimmed names, and reject empty-after-trim input
-- [ ] Move modal: lazy-loaded folder tree, prevents cycles
-- [ ] Search bar in header → navigates to `/drive/search?q=`
-- [ ] Starred view
-- [ ] Trash view
-- [ ] File preview modal (images in `<img>`, PDFs in `<iframe>`)
-- [ ] Double-click behavior: folder → navigate, previewable → preview, other → download
-- [ ] Pinia files store for current folder state and CRUD operations
+- [x] App layout: sidebar + header + main content area (`DriveView`)
+- [x] Sidebar: New button (dropdown), nav links (My Drive, Starred, Trash), storage usage bar
+- [x] Storage usage fetch from `GET /api/storage`, with refresh after quota-affecting mutations
+- [x] File list component: columns (name, modified, size), file type icons, empty state
+- [x] Folder navigation: click folder → route to `/drive/folder/:id` → fetch contents
+- [x] Breadcrumbs from `/api/files/:id/path`
+- [x] Context menu (right-click): Open, Download, Rename, Star/Unstar, Move to, Move to trash
+- [x] Trash view context menu: Restore, Delete forever
+- [x] Empty trash button using trash listing + `POST /api/files/bulk-delete` (no separate endpoint)
+- [x] New folder modal with invalid-character validation, trimmed names, and reject empty-after-trim input
+- [x] Rename modal with invalid-character validation, trimmed names, and reject empty-after-trim input
+- [x] Move modal: lazy-loaded folder tree, prevents cycles
+- [x] Search bar in header → navigates to `/drive/search?q=`
+- [x] Starred view
+- [x] Trash view
+- [x] File preview modal (images in `<img>`, PDFs in `<iframe>`)
+- [x] Double-click behavior: folder → navigate, previewable → preview, other → download
+- [x] Pinia files store for current folder state and CRUD operations
 
 ### Verify (manual)
 - [ ] Create folders, navigate in and out, breadcrumbs update correctly

@@ -220,19 +220,19 @@ Main drive UI: navigation, file list, folders, context menu, search, starred, tr
 - [x] Pinia files store for current folder state and CRUD operations
 
 ### Verify (manual)
-- [ ] Create folders, navigate in and out, breadcrumbs update correctly
-- [ ] Right-click → Rename → name updates in list
-- [ ] Right-click → Star → appears in Starred view
-- [ ] Right-click → Move to → item moves to selected folder
-- [ ] Right-click → Move to trash → disappears from list → appears in Trash view
-- [ ] Restore from trash → reappears under current parent, or in root if parent no longer exists
-- [ ] Delete forever → gone permanently
-- [ ] Empty trash → all trash items gone
-- [ ] Search by filename → results shown
-- [ ] Double-click image → preview modal opens
-- [ ] Double-click PDF → preview modal opens
-- [ ] Double-click SVG → no preview modal; file downloads instead
-- [ ] Double-click .zip → downloads
+- [x] Create folders, navigate in and out, breadcrumbs update correctly
+- [x] Right-click → Rename → name updates in list
+- [x] Right-click → Star → appears in Starred view
+- [x] Right-click → Move to → item moves to selected folder
+- [x] Right-click → Move to trash → disappears from list → appears in Trash view
+- [x] Restore from trash → reappears under current parent, or in root if parent no longer exists
+- [x] Delete forever → gone permanently
+- [x] Empty trash → all trash items gone
+- [x] Search by filename → results shown
+- [x] Double-click image → preview modal opens
+- [x] Double-click PDF → preview modal opens
+- [x] Double-click SVG → no preview modal; file downloads instead
+- [x] Double-click .zip → downloads
 
 ---
 

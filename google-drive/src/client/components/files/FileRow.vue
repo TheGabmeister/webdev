@@ -3,23 +3,22 @@ import type { FileItem } from '../../types';
 
 const props = defineProps<{
   file: FileItem;
+  selected: boolean;
+  focused: boolean;
 }>();
 
 const emit = defineEmits<{
   open: [file: FileItem];
+  select: [event: MouseEvent];
   contextmenu: [event: MouseEvent, file: FileItem];
 }>();
 
-function handleClick() {
-  if (props.file.isFolder) {
-    emit('open', props.file);
-  }
+function handleClick(e: MouseEvent) {
+  emit('select', e);
 }
 
 function handleDoubleClick() {
-  if (!props.file.isFolder) {
-    emit('open', props.file);
-  }
+  emit('open', props.file);
 }
 
 function formatSize(sizeStr: string): string {
@@ -51,7 +50,14 @@ function getIcon(file: FileItem): string {
 
 <template>
   <tr
-    class="hover:bg-gray-50 cursor-pointer border-b border-gray-100 select-none"
+    class="cursor-pointer border-b border-gray-100 select-none"
+    :class="{
+      'bg-blue-50': props.selected,
+      'hover:bg-gray-50': !props.selected,
+      'ring-2 ring-blue-400 ring-inset': props.focused,
+    }"
+    role="row"
+    :aria-selected="props.selected"
     @click="handleClick"
     @dblclick="handleDoubleClick"
     @contextmenu.prevent="emit('contextmenu', $event, props.file)"

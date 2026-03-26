@@ -1,16 +1,20 @@
 <script setup lang="ts">
-import { watch, ref } from 'vue';
+import { watch, ref, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useFilesStore } from '../stores/files';
+import { useUpload } from '../composables/useUpload';
+import { useSelection } from '../composables/useSelection';
 import * as filesApi from '../api/files';
 import type { FileItem } from '../types';
 
 import AppHeader from '../components/layout/AppHeader.vue';
 import AppSidebar from '../components/layout/AppSidebar.vue';
+import UploadPanel from '../components/layout/UploadPanel.vue';
 import Breadcrumbs from '../components/files/Breadcrumbs.vue';
 import FileList from '../components/files/FileList.vue';
 import ContextMenu from '../components/files/ContextMenu.vue';
 import FilePreview from '../components/files/FilePreview.vue';
+import BulkActionBar from '../components/files/BulkActionBar.vue';
 import NewFolderModal from '../components/modals/NewFolderModal.vue';
 import RenameModal from '../components/modals/RenameModal.vue';
 import MoveModal from '../components/modals/MoveModal.vue';
@@ -18,6 +22,8 @@ import MoveModal from '../components/modals/MoveModal.vue';
 const route = useRoute();
 const router = useRouter();
 const filesStore = useFilesStore();
+const upload = useUpload();
+const selection = useSelection();
 
 // Modals
 const showNewFolder = ref(false);
@@ -34,15 +40,28 @@ const targetFile = ref<FileItem | null>(null);
 // Current folder name for breadcrumbs
 const currentFolderName = ref('');
 
+// Drag and drop
+const isDragging = ref(false);
+
+// File picker
+const fileInputRef = ref<HTMLInputElement>();
+
+// Move modal target (for bulk move)
+const bulkMoveMode = ref(false);
+
 const PREVIEWABLE_MIME_TYPES = new Set([
   'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf',
 ]);
 
-// Route watcher — load data based on current route
+const isTrashView = computed(() => filesStore.viewMode === 'trash');
+const selectedFiles = computed(() => selection.getSelectedFiles(filesStore.files));
+
+// Route watcher
 watch(
   () => [route.name, route.params.id, route.query.q],
   async () => {
     contextMenu.value = null;
+    selection.clearSelection();
     const routeName = route.name as string;
 
     if (routeName === 'drive') {
@@ -51,7 +70,6 @@ watch(
     } else if (routeName === 'drive-folder') {
       const folderId = route.params.id as string;
       await filesStore.fetchFiles(folderId);
-      // Get folder name for breadcrumbs
       try {
         const folder = await filesApi.getFile(folderId);
         currentFolderName.value = folder.name;
@@ -73,7 +91,6 @@ watch(
   { immediate: true },
 );
 
-// View title
 function viewTitle(): string {
   switch (filesStore.viewMode) {
     case 'starred': return 'Starred';
@@ -83,9 +100,7 @@ function viewTitle(): string {
   }
 }
 
-const isTrashView = () => filesStore.viewMode === 'trash';
-
-// File actions
+// --- File actions ---
 function handleOpen(file: FileItem) {
   if (file.isFolder) {
     router.push(`/drive/folder/${file.id}`);
@@ -101,9 +116,7 @@ async function handleDownload(file: FileItem) {
   try {
     const { url } = await filesApi.getDownloadUrl(file.id);
     window.open(url, '_blank');
-  } catch {
-    // Silently fail
-  }
+  } catch { /* silently fail */ }
 }
 
 function handleContextMenu(event: MouseEvent, file: FileItem) {
@@ -117,6 +130,7 @@ function handleRename(file: FileItem) {
 
 function handleMoveTo(file: FileItem) {
   targetFile.value = file;
+  bulkMoveMode.value = false;
   showMove.value = true;
 }
 
@@ -126,14 +140,17 @@ async function handleStar(file: FileItem) {
 
 async function handleTrash(file: FileItem) {
   await filesStore.trashFile(file.id);
+  selection.clearSelection();
 }
 
 async function handleRestore(file: FileItem) {
   await filesStore.restoreFile(file.id);
+  selection.clearSelection();
 }
 
 async function handleDeleteForever(file: FileItem) {
   await filesStore.deleteFile(file.id);
+  selection.clearSelection();
 }
 
 async function handleEmptyTrash() {
@@ -153,9 +170,16 @@ async function handleRenameSubmit(name: string) {
 }
 
 async function handleMoveSubmit(parentId: string | null) {
-  if (!targetFile.value) return;
-  await filesStore.moveFile(targetFile.value.id, parentId);
-  showMove.value = false;
+  if (bulkMoveMode.value) {
+    const ids = selection.getSelectedIds();
+    await filesApi.bulkMove(ids, parentId || '');
+    showMove.value = false;
+    selection.clearSelection();
+    await filesStore.refreshCurrentView();
+  } else if (targetFile.value) {
+    await filesStore.moveFile(targetFile.value.id, parentId);
+    showMove.value = false;
+  }
 }
 
 function handleBreadcrumbNav(folderId: string | null) {
@@ -165,6 +189,126 @@ function handleBreadcrumbNav(folderId: string | null) {
     router.push('/drive');
   }
 }
+
+// --- Selection actions ---
+function handleSelect(file: FileItem, index: number, event: MouseEvent | KeyboardEvent) {
+  selection.handleClick(file, index, filesStore.files, event);
+}
+
+function handleKeyAction(action: string, file: FileItem) {
+  if (action === 'rename') handleRename(file);
+  else if (action === 'contextmenu') {
+    const rect = document.querySelector(`[data-file-id="${file.id}"]`)?.getBoundingClientRect();
+    contextMenu.value = { file, x: rect?.right ?? 300, y: rect?.top ?? 200 };
+  }
+  else if (action === 'escape') {
+    selection.clearSelection();
+    contextMenu.value = null;
+  }
+}
+
+// --- Bulk actions ---
+async function handleBulkTrash() {
+  const ids = selection.getSelectedIds();
+  await filesApi.bulkTrash(ids);
+  selection.clearSelection();
+  await filesStore.refreshCurrentView();
+  await filesStore.fetchStorage();
+}
+
+async function handleBulkRestore() {
+  const ids = selection.getSelectedIds();
+  await filesApi.bulkRestore(ids);
+  selection.clearSelection();
+  await filesStore.refreshCurrentView();
+}
+
+async function handleBulkDelete() {
+  const ids = selection.getSelectedIds();
+  await filesApi.bulkDelete(ids);
+  selection.clearSelection();
+  await filesStore.refreshCurrentView();
+  await filesStore.fetchStorage();
+}
+
+async function handleBulkDownload() {
+  const selected = selectedFiles.value;
+  if (selected.length === 1 && !selected[0].isFolder) {
+    await handleDownload(selected[0]);
+  } else {
+    // Bulk download as ZIP
+    const ids = selected.map(f => f.id);
+    try {
+      const csrfMatch = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]*)/);
+      const csrfToken = csrfMatch ? decodeURIComponent(csrfMatch[1]) : '';
+      const res = await fetch('/api/files/bulk-download', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+        credentials: 'include',
+        body: JSON.stringify({ ids }),
+      });
+      if (!res.ok) {
+        const body = await res.json();
+        alert(body.error || 'Download failed');
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'download.zip';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      alert('Download failed');
+    }
+  }
+}
+
+function handleBulkMove() {
+  bulkMoveMode.value = true;
+  targetFile.value = selectedFiles.value[0] || null;
+  showMove.value = true;
+}
+
+// --- Upload ---
+function triggerFilePicker() {
+  fileInputRef.value?.click();
+}
+
+function handleFileInput(event: Event) {
+  const input = event.target as HTMLInputElement;
+  if (input.files && input.files.length > 0) {
+    upload.addFiles(input.files, filesStore.currentFolderId);
+    input.value = '';
+  }
+}
+
+// --- Drag and drop ---
+function handleDragEnter(e: DragEvent) {
+  e.preventDefault();
+  if (e.dataTransfer?.types.includes('Files')) {
+    isDragging.value = true;
+  }
+}
+
+function handleDragOver(e: DragEvent) {
+  e.preventDefault();
+}
+
+function handleDragLeave(e: DragEvent) {
+  if (e.currentTarget === e.target || !e.relatedTarget) {
+    isDragging.value = false;
+  }
+}
+
+function handleDrop(e: DragEvent) {
+  e.preventDefault();
+  isDragging.value = false;
+  if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
+    upload.addFiles(e.dataTransfer.files, filesStore.currentFolderId);
+  }
+}
 </script>
 
 <template>
@@ -172,10 +316,27 @@ function handleBreadcrumbNav(folderId: string | null) {
     <AppHeader />
 
     <div class="flex flex-1 overflow-hidden">
-      <AppSidebar @new-folder="showNewFolder = true" />
+      <AppSidebar
+        @new-folder="showNewFolder = true"
+        @upload-file="triggerFilePicker"
+      />
 
-      <main class="flex-1 flex flex-col overflow-hidden px-6 pt-2">
-        <!-- Breadcrumbs or view title -->
+      <main
+        class="flex-1 flex flex-col overflow-hidden px-6 pt-2 relative"
+        @dragenter="handleDragEnter"
+        @dragover="handleDragOver"
+        @dragleave="handleDragLeave"
+        @drop="handleDrop"
+      >
+        <!-- Drag overlay -->
+        <div
+          v-if="isDragging"
+          class="absolute inset-0 bg-blue-50/80 border-2 border-dashed border-blue-400 rounded-lg z-30 flex items-center justify-center pointer-events-none"
+        >
+          <div class="text-blue-600 text-lg font-medium">Drop files to upload</div>
+        </div>
+
+        <!-- Header row: breadcrumbs/title + actions -->
         <div class="flex items-center justify-between">
           <div v-if="filesStore.viewMode === 'folder'">
             <Breadcrumbs
@@ -189,7 +350,7 @@ function handleBreadcrumbNav(folderId: string | null) {
           </div>
 
           <button
-            v-if="isTrashView() && filesStore.files.length > 0"
+            v-if="isTrashView && filesStore.files.length > 0"
             @click="handleEmptyTrash"
             class="text-sm text-red-600 hover:text-red-800 hover:bg-red-50 px-3 py-1.5 rounded-md"
           >
@@ -197,15 +358,43 @@ function handleBreadcrumbNav(folderId: string | null) {
           </button>
         </div>
 
+        <!-- Bulk action bar -->
+        <BulkActionBar
+          v-if="selection.hasSelection.value"
+          :selected-files="selectedFiles"
+          :is-trash-view="isTrashView"
+          @move-to="handleBulkMove"
+          @trash="handleBulkTrash"
+          @download="handleBulkDownload"
+          @restore="handleBulkRestore"
+          @delete-forever="handleBulkDelete"
+          @clear-selection="selection.clearSelection()"
+        />
+
         <!-- File list -->
         <FileList
           :files="filesStore.files"
           :loading="filesStore.loading"
+          :selected-ids="selection.selectedIds.value"
           @open="handleOpen"
           @contextmenu="handleContextMenu"
+          @select="handleSelect"
+          @keyaction="handleKeyAction"
         />
       </main>
     </div>
+
+    <!-- Hidden file input -->
+    <input
+      ref="fileInputRef"
+      type="file"
+      multiple
+      class="hidden"
+      @change="handleFileInput"
+    />
+
+    <!-- Upload panel -->
+    <UploadPanel />
 
     <!-- Context menu -->
     <ContextMenu
@@ -213,7 +402,7 @@ function handleBreadcrumbNav(folderId: string | null) {
       :file="contextMenu.file"
       :x="contextMenu.x"
       :y="contextMenu.y"
-      :is-trash-view="isTrashView()"
+      :is-trash-view="isTrashView"
       @close="contextMenu = null"
       @open="handleOpen(contextMenu!.file)"
       @download="handleDownload(contextMenu!.file)"
@@ -241,9 +430,9 @@ function handleBreadcrumbNav(folderId: string | null) {
 
     <MoveModal
       v-if="showMove && targetFile"
-      :file-id="targetFile.id"
-      :file-name="targetFile.name"
-      :is-folder="targetFile.isFolder"
+      :file-id="bulkMoveMode ? '' : targetFile.id"
+      :file-name="bulkMoveMode ? `${selection.selectedCount.value} items` : targetFile.name"
+      :is-folder="bulkMoveMode ? false : targetFile.isFolder"
       @close="showMove = false"
       @move="handleMoveSubmit"
     />

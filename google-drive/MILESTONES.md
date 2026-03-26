@@ -241,14 +241,14 @@ Main drive UI: navigation, file list, folders, context menu, search, starred, tr
 Upload panel, drag-and-drop, multi-select with bulk actions, keyboard accessibility.
 
 ### Frontend
-- [ ] Upload panel (bottom-right, collapsible): queue display, per-file progress, retry, cancel
-- [ ] Upload composable: bounded queue (max 3 concurrent), presigned URL flow, `XMLHttpRequest` progress tracking
-- [ ] Drag-and-drop: `dragenter`/`dragover`/`drop` on file list area, visual overlay
-- [ ] New > Upload file button triggers file picker
-- [ ] Quota check before upload; show error when over limit
-- [ ] Multi-select: click (single), Ctrl+click (toggle), Shift+click (range)
-- [ ] Bulk action bar: Move to, Move to trash, Download (context-aware for trash view: Restore via `bulk-restore`, Delete forever)
-- [ ] Bulk download frontend: single file → direct download, multiple → call `POST /api/files/bulk-download`, folders disabled with explanation
+- [x] Upload panel (bottom-right, collapsible): queue display, per-file progress, retry, cancel
+- [x] Upload composable: bounded queue (max 3 concurrent), presigned URL flow, `XMLHttpRequest` progress tracking
+- [x] Drag-and-drop: `dragenter`/`dragover`/`drop` on file list area, visual overlay
+- [x] New > Upload file button triggers file picker
+- [x] Quota check before upload; show error when over limit
+- [x] Multi-select: click (single), Ctrl+click (toggle), Shift+click (range)
+- [x] Bulk action bar: Move to, Move to trash, Download (context-aware for trash view: Restore via `bulk-restore`, Delete forever)
+- [x] Bulk download frontend: single file → direct download, multiple → call `POST /api/files/bulk-download`, folders disabled with explanation
 - [ ] Keyboard navigation: arrow keys, Enter to open, Space to toggle select, Shift+Arrow for range, F2 rename, Shift+F10 or Context Menu key to open actions, Esc to close
 - [ ] Focus traps in modals, focus restore on close
 - [ ] Accessible labels on forms, menus, dialogs
@@ -277,12 +277,12 @@ Upload panel, drag-and-drop, multi-select with bulk actions, keyboard accessibil
 Render deployment, S3 setup, environment wiring, and production-like smoke checks.
 
 ### Backend and Infra
-- [ ] Create `render.yaml` with web service, Postgres, and cron job definitions
+- [x] Create `render.yaml` with web service, Postgres, and cron job definitions
 - [ ] Configure environment variables in Render dashboard: `DATABASE_URL`, `JWT_SECRET`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `S3_BUCKET_NAME`, `APP_ORIGIN`, `PORT`
 - [ ] Configure S3 bucket with private access and CORS for `PUT` and `GET` from production `APP_ORIGIN`
 - [ ] Configure IAM user with scoped policy: `PutObject`, `GetObject`, `DeleteObject`, `HeadObject`
-- [ ] Configure Render build/start pipeline: `npm install` → `prisma generate` → `prisma migrate deploy` → `vite build` → `tsc`
-- [ ] Configure Render Cron Job for orphaned upload reconciliation
+- [x] Configure Render build/start pipeline: `npm install` → `prisma generate` → `prisma migrate deploy` → `vite build` → `tsc`
+- [x] Configure Render Cron Job for orphaned upload reconciliation
 
 ### Verify (manual)
 - [ ] Deployed app serves SPA and API from the same origin

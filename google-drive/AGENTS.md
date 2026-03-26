@@ -63,6 +63,7 @@ Project guidance for future Codex sessions working in `c:\dev\webdev\google-driv
   - upload directly to S3 with `XMLHttpRequest`
   - confirm with idempotent `PATCH /api/files/:id/confirm`
 - Confirm must never double-increment quota.
+- If confirm cannot find a valid S3 object, it should return `409 Conflict` and leave the record `pending` for retry or reconciliation.
 - Upload queue is bounded to `3` active uploads.
 - Canceled/abandoned uploads are handled by reconciliation of stale pending rows older than `20 minutes`.
 - Preview support is limited to:
@@ -106,10 +107,12 @@ Project guidance for future Codex sessions working in `c:\dev\webdev\google-driv
 - Follow `MILESTONES.md` unless the user explicitly changes sequencing.
 - Current milestone structure:
   - Milestone 1: foundation/auth
-  - Milestone 2: file API + S3
-  - Milestone 3: core frontend
-  - Milestone 4: uploads, multi-select, polish
-  - Milestone 5: deployment and operations
+  - Milestone 2: S3 upload lifecycle
+  - Milestone 3: file tree and trash
+  - Milestone 4: bulk operations and seed script
+  - Milestone 5: core frontend
+  - Milestone 6: uploads, multi-select, polish
+  - Milestone 7: deployment and operations
 
 ## Working rules for future sessions
 - Before implementing, check `SPEC.md`, `MILESTONES.md`, and this file for alignment.

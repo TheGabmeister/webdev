@@ -29,6 +29,7 @@ npm test -- auth     # Run tests matching "auth"
 - **CSRF via double-submit cookie**: Mutating requests require an `X-CSRF-Token` header matching the `csrf_token` cookie. Auth failure = 401, CSRF failure = 403.
 - **Auth middleware exclusions**: Only `/api/auth/register`, `/api/auth/login`, and `/api/auth/session` skip auth middleware. `/api/auth/logout` requires both auth and CSRF.
 - **Direct S3 uploads**: Files never pass through the Express server. Client gets a presigned PUT URL, uploads directly to S3, then confirms via `PATCH /api/files/:id/confirm`. Confirm is idempotent and must never double-increment quota.
+- **Confirm failure behavior**: If confirm cannot find a valid S3 object yet, return `409 Conflict` and leave the record `pending` for retry or later reconciliation.
 - **Single File table**: Files and folders share one table with `isFolder` as discriminator. `parentId = null` means root (no explicit root row). Duplicate names are allowed.
 - **Two-field trash model**: `trashedAt` for directly trashed items, `trashedByAncestorId` for cascade-inherited trash. Both must be null for an item to be "visible" in normal views.
 - **Orphaned upload reconciliation**: A standalone script (Render Cron) cleans up pending uploads older than 20 minutes — not part of the request path.

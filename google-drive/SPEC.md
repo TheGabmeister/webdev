@@ -265,6 +265,7 @@ Example: `a1b2c3d4/550e8400-e29b-41d4-a716-446655440000.pdf`
 - `PATCH /api/files/:id/confirm` is idempotent.
 - If the file is already confirmed, the endpoint returns success without mutating quota again.
 - Confirmation verifies the object exists and matches expected metadata before switching status to `uploaded`.
+- If the object is missing or invalid at confirm time, the endpoint returns `409 Conflict` and leaves the record `pending` for retry or later reconciliation.
 
 ### Orphaned Upload Reconciliation
 - A periodic reconciliation process runs for pending uploads older than `20 minutes`.

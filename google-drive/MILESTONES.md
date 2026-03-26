@@ -23,6 +23,7 @@ Scaffolding, database, auth system, and auth UI.
 ### Frontend
 - [ ] Initialize Vue 3 + TypeScript + Vite + Vue Router + Pinia + Tailwind
 - [ ] Configure build so Express serves the SPA from `dist/client/`
+- [ ] Configure API client to send cookie-auth requests with `credentials: 'include'`
 - [ ] Auth store with session bootstrap from `GET /api/auth/session`
 - [ ] Auth bootstrap loading state so protected routes do not flicker before session check completes
 - [ ] CSRF: read `csrf_token` cookie, attach `X-CSRF-Token` on mutating requests
@@ -35,6 +36,8 @@ Scaffolding, database, auth system, and auth UI.
 
 ### Tests
 - [ ] Set up test runner (Vitest + supertest)
+- [ ] Set up isolated test PostgreSQL database lifecycle (migrate/reset per test run or suite)
+- [ ] Set up reusable S3 mocking helpers for presigned URL generation and object existence/delete checks
 - [ ] Register → sets auth + CSRF cookies, returns user summary
 - [ ] Login → sets auth + CSRF cookies, returns user summary
 - [ ] Login with wrong password → 401, no cookies set
@@ -78,7 +81,7 @@ Presigned URL upload/download flow, confirmation, quota tracking, and storage en
 - [ ] Upload URL with trashed `parentId` → 400
 - [ ] Confirm after S3 upload → status flips to `uploaded`, `storageUsed` incremented
 - [ ] Confirm same file again → 200 success, `storageUsed` not incremented twice
-- [ ] Confirm file that doesn't exist in S3 → status stays `pending` or `failed`
+- [ ] Confirm file that doesn't exist in S3 → `409 Conflict`, status remains `pending`
 - [ ] Download returns presigned URL with correct `Content-Disposition: attachment` filename
 - [ ] Preview for JPEG → returns `{ url, mimeType }`
 - [ ] Preview for PDF → returns `{ url, mimeType }`
@@ -203,11 +206,12 @@ Main drive UI: navigation, file list, folders, context menu, search, starred, tr
 - [ ] File list component: columns (name, modified, size), file type icons, empty state
 - [ ] Folder navigation: click folder → route to `/drive/folder/:id` → fetch contents
 - [ ] Breadcrumbs from `/api/files/:id/path`
-- [ ] Context menu (right-click): Open, Download, Rename, Star/Unstar, Move to trash
+- [ ] Context menu (right-click): Open, Download, Rename, Star/Unstar, Move to, Move to trash
 - [ ] Trash view context menu: Restore, Delete forever
 - [ ] Empty trash button using trash listing + `POST /api/files/bulk-delete` (no separate endpoint)
 - [ ] New folder modal with invalid-character validation, trimmed names, and reject empty-after-trim input
 - [ ] Rename modal with invalid-character validation, trimmed names, and reject empty-after-trim input
+- [ ] Move modal: lazy-loaded folder tree, prevents cycles
 - [ ] Search bar in header → navigates to `/drive/search?q=`
 - [ ] Starred view
 - [ ] Trash view
@@ -219,6 +223,7 @@ Main drive UI: navigation, file list, folders, context menu, search, starred, tr
 - [ ] Create folders, navigate in and out, breadcrumbs update correctly
 - [ ] Right-click → Rename → name updates in list
 - [ ] Right-click → Star → appears in Starred view
+- [ ] Right-click → Move to → item moves to selected folder
 - [ ] Right-click → Move to trash → disappears from list → appears in Trash view
 - [ ] Restore from trash → reappears under current parent, or in root if parent no longer exists
 - [ ] Delete forever → gone permanently
@@ -243,8 +248,6 @@ Upload panel, drag-and-drop, multi-select with bulk actions, keyboard accessibil
 - [ ] Quota check before upload; show error when over limit
 - [ ] Multi-select: click (single), Ctrl+click (toggle), Shift+click (range)
 - [ ] Bulk action bar: Move to, Move to trash, Download (context-aware for trash view: Restore via `bulk-restore`, Delete forever)
-- [ ] File context menu adds Move to
-- [ ] Move modal: lazy-loaded folder tree, prevents cycles
 - [ ] Bulk download frontend: single file → direct download, multiple → call `POST /api/files/bulk-download`, folders disabled with explanation
 - [ ] Keyboard navigation: arrow keys, Enter to open, Space to toggle select, Shift+Arrow for range, F2 rename, Shift+F10 or Context Menu key to open actions, Esc to close
 - [ ] Focus traps in modals, focus restore on close

@@ -314,7 +314,7 @@ All file routes require a valid session cookie. All mutating file routes also re
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/api/files` | List folder contents. Query: `parentId=<id>` optional, `foldersOnly=true` optional. Excludes rows where `trashedAt` or `trashedByAncestorId` is non-null. Sort folders first, then files, both alphabetically. |
-| GET | `/api/files/search` | Search visible files by filename with `ILIKE '%term%'`. Excludes inherited-trash descendants. |
+| GET | `/api/files/search` | Search visible files by filename with `ILIKE '%term%'`. Excludes rows hidden by direct or inherited trash. |
 | GET | `/api/files/starred` | List all starred visible items. |
 | GET | `/api/files/trash` | List top-level trash entries. Includes directly trashed items and top-level trashed folders, but not descendants hidden only by ancestor trash. |
 | GET | `/api/files/:id` | Get single file or folder metadata. |

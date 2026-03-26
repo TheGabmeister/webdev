@@ -17,7 +17,7 @@ Scaffolding, database, auth system, and auth UI.
 - [ ] Implement `POST /api/auth/logout`
 - [ ] JWT in `drive_session` cookie with `HttpOnly`, `SameSite=Lax`, path `/`, and conditional `Secure` flag (HTTPS only in production; omitted for localhost)
 - [ ] CSRF double-submit cookie pattern (`csrf_token` cookie + `X-CSRF-Token` header)
-- [ ] Auth middleware on `/api/*` (exclude `/api/auth/*`)
+- [ ] Auth middleware on `/api/*` (exclude `/api/auth/register`, `/api/auth/login`, and `/api/auth/session`; `/api/auth/logout` requires auth + CSRF)
 - [ ] Rate limiting on register, login
 
 ### Frontend

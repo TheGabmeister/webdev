@@ -505,10 +505,12 @@ async function cascadeTrashToDescendants(parentId: string, ancestorId: string) {
   });
 
   for (const child of children) {
-    await prisma.file.update({
-      where: { id: child.id },
-      data: { trashedByAncestorId: ancestorId },
-    });
+    if (!child.trashedByAncestorId) {
+      await prisma.file.update({
+        where: { id: child.id },
+        data: { trashedByAncestorId: ancestorId },
+      });
+    }
     if (child.isFolder) {
       await cascadeTrashToDescendants(child.id, ancestorId);
     }

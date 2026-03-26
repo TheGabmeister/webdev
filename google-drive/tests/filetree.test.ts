@@ -511,6 +511,34 @@ describe('File Tree and Trash', () => {
       expect(dbDirectTrashed!.trashedByAncestorId).toBeNull();
     });
 
+    it('keeps descendants of a directly trashed child folder hidden after restoring the parent folder', async () => {
+      const auth = await authedUser();
+      const parentRes = await createFolder(auth, 'Parent');
+      const childFolderRes = await createFolder(auth, 'Child Folder', parentRes.body.id);
+      const grandchild = await createUploadedFileRecord(auth, 'grandchild.txt', childFolderRes.body.id);
+
+      await trashFile(auth, childFolderRes.body.id);
+      await trashFile(auth, parentRes.body.id);
+      await restoreFile(auth, parentRes.body.id);
+
+      const dbChildFolder = await prisma.file.findUnique({ where: { id: childFolderRes.body.id } });
+      expect(dbChildFolder!.trashedAt).not.toBeNull();
+      expect(dbChildFolder!.trashedByAncestorId).toBeNull();
+
+      const dbGrandchild = await prisma.file.findUnique({ where: { id: grandchild.id } });
+      expect(dbGrandchild!.trashedAt).toBeNull();
+      expect(dbGrandchild!.trashedByAncestorId).toBe(childFolderRes.body.id);
+
+      const listRes = await listFiles(auth, { parentId: childFolderRes.body.id });
+      expect(listRes.body).toHaveLength(0);
+
+      const trashRes = await request(app)
+        .get('/api/files/trash')
+        .set('Cookie', cookieHeader(auth.cookies));
+      expect(trashRes.body.find((item: any) => item.id === childFolderRes.body.id)).toBeDefined();
+      expect(trashRes.body.find((item: any) => item.id === grandchild.id)).toBeUndefined();
+    });
+
     it('restores to root if parent was permanently deleted', async () => {
       const auth = await authedUser();
       const folderRes = await createFolder(auth, 'Parent');

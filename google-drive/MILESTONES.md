@@ -112,7 +112,7 @@ Folder CRUD, listing, search, starred, breadcrumbs, trash/restore with cascade l
 - [x] `GET /api/files/trash` — top-level trashed items only
 - [x] `PATCH /api/files/:id` — rename, star/unstar, move (with cycle detection for folders; reject trashed target parent)
 - [x] `PATCH /api/files/:id/trash` — set `trashedAt`; cascade `trashedByAncestorId` for folders
-- [ ] `PATCH /api/files/:id/restore` — clear direct trash; clear descendant ancestor-trash; fall back to root if parent gone
+- [x] `PATCH /api/files/:id/restore` — clear direct trash; clear descendant ancestor-trash; fall back to root if parent gone
 - [x] `DELETE /api/files/:id` — permanent delete; recursive for folders; remove S3 objects; decrement quota
 
 ### Tests
@@ -141,7 +141,7 @@ Folder CRUD, listing, search, starred, breadcrumbs, trash/restore with cascade l
 - [x] Trash a folder where a child was already directly trashed → child keeps its own `trashedAt`, gains `trashedByAncestorId`
 - [x] `GET /api/files/trash` → returns only top-level trashed items, not inherited-trash descendants
 - [x] Restore a file → `trashedAt` cleared; reappears in list
-- [ ] Restore a folder → clears `trashedByAncestorId` on descendants; descendants that were directly trashed remain trashed
+- [x] Restore a folder → clears `trashedByAncestorId` on descendants; descendants that were directly trashed remain trashed
 - [x] Restore item whose parent was permanently deleted → restored to root (`parentId = null`)
 - [x] Permanent delete file → DB row gone, S3 object deleted, `storageUsed` decremented
 - [x] Permanent delete folder → all descendant rows and S3 objects deleted, `storageUsed` decremented for each file

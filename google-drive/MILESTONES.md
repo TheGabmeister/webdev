@@ -15,7 +15,7 @@ Scaffolding, database, auth system, and auth UI.
 - [ ] Implement `POST /api/auth/register` and `POST /api/auth/login` with bcrypt
 - [ ] Implement `GET /api/auth/session` for SPA bootstrap
 - [ ] Implement `POST /api/auth/logout`
-- [ ] JWT in `HttpOnly` cookie (`drive_session`)
+- [ ] JWT in `drive_session` cookie with `HttpOnly`, `Secure`, `SameSite=Lax`, and path `/`
 - [ ] CSRF double-submit cookie pattern (`csrf_token` cookie + `X-CSRF-Token` header)
 - [ ] Auth middleware on `/api/*` (exclude `/api/auth/*`)
 - [ ] Rate limiting on register, login
@@ -53,7 +53,7 @@ All backend file operations. No frontend beyond what's needed to manually test.
 - [ ] `PATCH /api/files/:id/confirm` — idempotent; verify via `HeadObject`; flip status; increment quota once
 - [ ] `GET /api/files/:id/download` — presigned GET with `Content-Disposition: attachment`
 - [ ] `GET /api/files/:id/preview` — presigned GET with `Content-Disposition: inline` (images + PDF only)
-- [ ] `POST /api/files/folder` — create folder with name validation
+- [ ] `POST /api/files/folder` — create folder with invalid-character validation, trimmed names, and reject empty-after-trim input
 - [ ] `GET /api/files` — list folder contents; exclude trashed; folders first, alphabetical; support `foldersOnly=true` for lazy-loaded move modal
 - [ ] `GET /api/files/:id` — single item metadata
 - [ ] `GET /api/files/:id/path` — breadcrumb ancestor chain
@@ -97,8 +97,8 @@ Main drive UI: navigation, file list, folders, context menu, search, starred, tr
 - [ ] Context menu (right-click): Open, Download, Rename, Star/Unstar, Move to trash
 - [ ] Trash view context menu: Restore, Delete forever
 - [ ] Empty trash button using trash listing + `POST /api/files/bulk-delete` (no separate endpoint)
-- [ ] New folder modal with name validation
-- [ ] Rename modal with name validation
+- [ ] New folder modal with invalid-character validation, trimmed names, and reject empty-after-trim input
+- [ ] Rename modal with invalid-character validation, trimmed names, and reject empty-after-trim input
 - [ ] Search bar in header → navigates to `/drive/search?q=`
 - [ ] Starred view
 - [ ] Trash view
@@ -152,8 +152,30 @@ Upload panel, drag-and-drop, multi-select with bulk actions, keyboard accessibil
 - [ ] Shift+click range → correct range selected
 - [ ] Bulk download 2 files → ZIP downloads
 - [ ] Bulk download 51 files → rejected with user-facing error
+- [ ] Bulk download over `500 MB` total → rejected with user-facing error
 - [ ] Select a folder + file → bulk download disabled with explanation
 - [ ] Canceled upload remains out of the file list and is later marked failed or cleaned up by reconciliation
 - [ ] Attempt to move a folder into its descendant → blocked with user-facing error
 - [ ] Arrow keys navigate rows, Enter opens, F2 renames, Shift+F10 opens context menu
 - [ ] Tab through modal → focus stays trapped → Esc closes → focus returns to trigger
+
+---
+
+## Milestone 5 — Deployment and Operations
+
+Render deployment, S3 setup, environment wiring, and production-like smoke checks.
+
+### Backend and Infra
+- [ ] Configure environment variables required by the spec: `DATABASE_URL`, `JWT_SECRET`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `S3_BUCKET_NAME`, `APP_ORIGIN`, `PORT`
+- [ ] Configure Express to serve the built SPA and API from the same origin in Render
+- [ ] Configure S3 bucket with private access and CORS for `PUT` and `GET` from `APP_ORIGIN`
+- [ ] Configure IAM permissions for `PutObject`, `GetObject`, `DeleteObject`, and `HeadObject`
+- [ ] Configure Render build/start pipeline to run Prisma generate, Prisma migrate deploy, Vite build, and TypeScript compilation
+- [ ] Configure Render Cron Job or background worker for orphaned upload reconciliation
+
+### Verify
+- [ ] Deployed app serves SPA and API from the same origin
+- [ ] Login, session bootstrap, and logout work in deployed environment with secure cookies
+- [ ] Direct S3 upload works from deployed frontend origin
+- [ ] File download and inline preview work in deployed environment
+- [ ] Reconciliation job runs successfully in deployed environment

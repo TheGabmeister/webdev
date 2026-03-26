@@ -1,0 +1,51 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  storageUsed  BigInt   @default(0)
+  storageLimit BigInt   @default(1073741824) // 1 GB
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  files File[]
+}
+
+model File {
+  id                  String    @id @default(uuid())
+  name                String
+  mimeType            String?
+  size                BigInt    @default(0)
+  isFolder            Boolean   @default(false)
+  starred             Boolean   @default(false)
+  s3Key               String?
+  uploadStatus        String    @default("pending") // "pending" | "uploaded" | "failed"
+
+  parentId            String?
+  parent              File?     @relation("FileTree", fields: [parentId], references: [id])
+  children            File[]    @relation("FileTree")
+
+  userId              String
+  user                User      @relation(fields: [userId], references: [id])
+
+  trashedAt           DateTime?
+  trashedByAncestorId String?
+
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@index([userId, parentId])
+  @@index([userId, starred])
+  @@index([userId, name])
+  @@index([userId, trashedAt])
+  @@index([userId, trashedByAncestorId])
+  @@index([userId, uploadStatus])
+}

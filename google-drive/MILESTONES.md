@@ -66,30 +66,30 @@ Scaffolding, database, auth system, and auth UI.
 Presigned URL upload/download flow, confirmation, quota tracking, and storage endpoint.
 
 ### Backend
-- [ ] AWS S3 client configuration
-- [ ] `POST /api/files/upload-url` — validate quota, file size, rate limit, reject trashed `parentId`; create pending record; return presigned PUT URL
+- [x] AWS S3 client configuration
+- [x] `POST /api/files/upload-url` — validate quota, file size, rate limit, reject trashed `parentId`; create pending record; return presigned PUT URL
 - [ ] `PATCH /api/files/:id/confirm` — idempotent; verify via `HeadObject`; flip status; increment quota once
-- [ ] `GET /api/files/:id/download` — presigned GET with `Content-Disposition: attachment`
-- [ ] `GET /api/files/:id/preview` — presigned GET with `Content-Disposition: inline` (images + PDF only)
-- [ ] `GET /api/storage` — return `{ used, limit }`
-- [ ] Rate limiting on upload-url
+- [x] `GET /api/files/:id/download` — presigned GET with `Content-Disposition: attachment`
+- [x] `GET /api/files/:id/preview` — presigned GET with `Content-Disposition: inline` (images + PDF only)
+- [x] `GET /api/storage` — return `{ used, limit }`
+- [x] Rate limiting on upload-url
 
 ### Tests
-- [ ] Upload URL request → returns `{ fileId, uploadUrl }`, file record is `pending`
-- [ ] Upload URL with file size > 100 MB → 400
-- [ ] Upload URL when quota would be exceeded → 413
-- [ ] Upload URL with trashed `parentId` → 400
-- [ ] Confirm after S3 upload → status flips to `uploaded`, `storageUsed` incremented
-- [ ] Confirm same file again → 200 success, `storageUsed` not incremented twice
-- [ ] Confirm file that doesn't exist in S3 → `409 Conflict`, status remains `pending`
+- [x] Upload URL request → returns `{ fileId, uploadUrl }`, file record is `pending`
+- [x] Upload URL with file size > 100 MB → 400
+- [x] Upload URL when quota would be exceeded → 413
+- [x] Upload URL with trashed `parentId` → 400
+- [x] Confirm after S3 upload → status flips to `uploaded`, `storageUsed` incremented
+- [x] Confirm same file again → 200 success, `storageUsed` not incremented twice
+- [x] Confirm file that doesn't exist in S3 → `409 Conflict`, status remains `pending`
 - [ ] Download returns presigned URL with correct `Content-Disposition: attachment` filename
-- [ ] Preview for JPEG → returns `{ url, mimeType }`
-- [ ] Preview for PDF → returns `{ url, mimeType }`
-- [ ] Preview for .zip → 400 (not previewable)
-- [ ] Preview for SVG → 400 (download-only)
-- [ ] `GET /api/storage` returns correct `{ used, limit }`
-- [ ] `GET /api/storage` reflects incremented usage after upload confirm
-- [ ] 101st upload URL request in 15 minutes → 429
+- [x] Preview for JPEG → returns `{ url, mimeType }`
+- [x] Preview for PDF → returns `{ url, mimeType }`
+- [x] Preview for .zip → 400 (not previewable)
+- [x] Preview for SVG → 400 (download-only)
+- [x] `GET /api/storage` returns correct `{ used, limit }`
+- [x] `GET /api/storage` reflects incremented usage after upload confirm
+- [x] 101st upload URL request in 15 minutes → 429
 
 ### Verify (manual)
 - [ ] Upload a file via `curl` using presigned URL → confirm → file record is `uploaded`, quota incremented
@@ -290,4 +290,3 @@ Render deployment, S3 setup, environment wiring, and production-like smoke check
 - [ ] Direct S3 upload works from deployed frontend origin
 - [ ] File download and inline preview work in deployed environment
 - [ ] Reconciliation job runs successfully in deployed environment
-

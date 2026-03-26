@@ -11,7 +11,7 @@ Scaffolding, database, auth system, and auth UI.
 ### Backend
 - [ ] Initialize Node.js + Express 5 + TypeScript project
 - [ ] Configure Prisma with PostgreSQL
-- [ ] Create `User` and `File` models, generate migration
+- [ ] Create the full initial `User` and `File` schema required by the spec, including quota fields, upload state, trash state, and indexes; generate migration
 - [ ] Implement `POST /api/auth/register` and `POST /api/auth/login` with bcrypt
 - [ ] Implement `GET /api/auth/session` for SPA bootstrap
 - [ ] Implement `POST /api/auth/logout`
@@ -24,17 +24,21 @@ Scaffolding, database, auth system, and auth UI.
 - [ ] Initialize Vue 3 + TypeScript + Vite + Vue Router + Pinia + Tailwind
 - [ ] Configure build so Express serves the SPA from `dist/client/`
 - [ ] Auth store with session bootstrap from `GET /api/auth/session`
+- [ ] Auth bootstrap loading state so protected routes do not flicker before session check completes
 - [ ] CSRF: read `csrf_token` cookie, attach `X-CSRF-Token` on mutating requests
 - [ ] Login and Register views with form validation
 - [ ] Router guard: redirect unauthenticated users to `/login?redirect=<route>`
-- [ ] Redirect to `/drive` after successful login/register
-- [ ] Handle 401 responses globally: clear auth state, redirect to login
+- [ ] After login, redirect to `redirect` query target if present; otherwise `/drive`
+- [ ] After registration, redirect to `/drive`
+- [ ] Handle 401 responses globally: clear auth state, redirect to login with `redirect=<current-route>`
+- [ ] Handle 403 CSRF responses without logging the user out
 
 ### Verify
 - [ ] Register a new user → cookie is set → redirected to `/drive`
 - [ ] Refresh the page → session rehydrates from `GET /api/auth/session`
 - [ ] Logout → cookie cleared → redirected to `/login`
-- [ ] Mutating request without CSRF token → 401
+- [ ] Expired session on a protected route → redirected to `/login?redirect=<route>` → after login returns to original route
+- [ ] Mutating request without CSRF token → 403, session remains intact
 - [ ] 11th login attempt in 15 minutes → 429
 
 ---
@@ -50,7 +54,7 @@ All backend file operations. No frontend beyond what's needed to manually test.
 - [ ] `GET /api/files/:id/download` — presigned GET with `Content-Disposition: attachment`
 - [ ] `GET /api/files/:id/preview` — presigned GET with `Content-Disposition: inline` (images + PDF only)
 - [ ] `POST /api/files/folder` — create folder with name validation
-- [ ] `GET /api/files` — list folder contents; exclude trashed; folders first, alphabetical
+- [ ] `GET /api/files` — list folder contents; exclude trashed; folders first, alphabetical; support `foldersOnly=true` for lazy-loaded move modal
 - [ ] `GET /api/files/:id` — single item metadata
 - [ ] `GET /api/files/:id/path` — breadcrumb ancestor chain
 - [ ] `GET /api/files/search` — `ILIKE` filename search, exclude trashed
@@ -67,12 +71,15 @@ All backend file operations. No frontend beyond what's needed to manually test.
 
 ### Verify
 - [ ] Upload a file via `curl` using presigned URL → confirm → file record is `uploaded`, quota incremented
+- [ ] Repeat confirm on the same uploaded file → success response, quota not incremented twice
 - [ ] Download returns presigned URL with correct filename
 - [ ] Create nested folders → list contents → breadcrumb path is correct
 - [ ] Trash a folder → descendants hidden from list and search → restore → descendants reappear (except individually trashed ones)
 - [ ] Permanent delete folder → all descendant rows and S3 objects gone, quota decremented
 - [ ] Bulk download 3 files → ZIP streams correctly
 - [ ] Bulk download 51 files → 400 error
+- [ ] Stale pending upload with valid S3 object → reconciliation marks uploaded once; invalid/missing object → marked failed
+- [ ] 101st upload URL request in 15 minutes → 429
 
 ---
 
@@ -86,9 +93,9 @@ Main drive UI: navigation, file list, folders, context menu, search, starred, tr
 - [ ] File list component: columns (name, modified, size), file type icons, empty state
 - [ ] Folder navigation: click folder → route to `/drive/folder/:id` → fetch contents
 - [ ] Breadcrumbs from `/api/files/:id/path`
-- [ ] Context menu (right-click): Open, Download, Rename, Star/Unstar, Move to, Move to trash
+- [ ] Context menu (right-click): Open, Download, Rename, Star/Unstar, Move to trash
 - [ ] Trash view context menu: Restore, Delete forever
-- [ ] Empty trash button
+- [ ] Empty trash button using trash listing + `POST /api/files/bulk-delete` (no separate endpoint)
 - [ ] New folder modal with name validation
 - [ ] Rename modal with name validation
 - [ ] Search bar in header → navigates to `/drive/search?q=`
@@ -103,7 +110,7 @@ Main drive UI: navigation, file list, folders, context menu, search, starred, tr
 - [ ] Right-click → Rename → name updates in list
 - [ ] Right-click → Star → appears in Starred view
 - [ ] Right-click → Move to trash → disappears from list → appears in Trash view
-- [ ] Restore from trash → reappears in original folder
+- [ ] Restore from trash → reappears under current parent, or in root if parent no longer exists
 - [ ] Delete forever → gone permanently
 - [ ] Empty trash → all trash items gone
 - [ ] Search by filename → results shown
@@ -125,9 +132,10 @@ Upload panel, drag-and-drop, multi-select with bulk actions, keyboard accessibil
 - [ ] Quota check before upload; show error when over limit
 - [ ] Multi-select: click (single), Ctrl+click (toggle), Shift+click (range)
 - [ ] Bulk action bar: Move to, Move to trash, Download (context-aware for trash view: Restore, Delete forever)
+- [ ] File context menu adds Move to
 - [ ] Move modal: lazy-loaded folder tree, prevents cycles
 - [ ] Bulk download: single file → direct download, multiple → ZIP, folders disabled with explanation
-- [ ] Keyboard navigation: arrow keys, Enter to open, Space to toggle select, Shift+Arrow for range, F2 rename, Esc to close
+- [ ] Keyboard navigation: arrow keys, Enter to open, Space to toggle select, Shift+Arrow for range, F2 rename, Shift+F10 or Context Menu key to open actions, Esc to close
 - [ ] Focus traps in modals, focus restore on close
 - [ ] Accessible labels on forms, menus, dialogs
 
@@ -141,5 +149,5 @@ Upload panel, drag-and-drop, multi-select with bulk actions, keyboard accessibil
 - [ ] Shift+click range → correct range selected
 - [ ] Bulk download 2 files → ZIP downloads
 - [ ] Select a folder + file → bulk download disabled with explanation
-- [ ] Arrow keys navigate rows, Enter opens, F2 renames
+- [ ] Arrow keys navigate rows, Enter opens, F2 renames, Shift+F10 opens context menu
 - [ ] Tab through modal → focus stays trapped → Esc closes → focus returns to trigger

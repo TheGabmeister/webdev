@@ -103,48 +103,48 @@ Presigned URL upload/download flow, confirmation, quota tracking, and storage en
 Folder CRUD, listing, search, starred, breadcrumbs, trash/restore with cascade logic.
 
 ### Backend
-- [ ] `POST /api/files/folder` — create folder with invalid-character validation, trimmed names, reject empty-after-trim input, and reject trashed `parentId`
-- [ ] `GET /api/files` — list folder contents; exclude trashed; folders first, alphabetical; support `foldersOnly=true` for lazy-loaded move modal
-- [ ] `GET /api/files/:id` — single item metadata
-- [ ] `GET /api/files/:id/path` — breadcrumb ancestor chain
-- [ ] `GET /api/files/search` — `ILIKE` filename search, exclude trashed
-- [ ] `GET /api/files/starred` — all visible starred items
-- [ ] `GET /api/files/trash` — top-level trashed items only
-- [ ] `PATCH /api/files/:id` — rename, star/unstar, move (with cycle detection for folders; reject trashed target parent)
-- [ ] `PATCH /api/files/:id/trash` — set `trashedAt`; cascade `trashedByAncestorId` for folders
+- [x] `POST /api/files/folder` — create folder with invalid-character validation, trimmed names, reject empty-after-trim input, and reject trashed `parentId`
+- [x] `GET /api/files` — list folder contents; exclude trashed; folders first, alphabetical; support `foldersOnly=true` for lazy-loaded move modal
+- [x] `GET /api/files/:id` — single item metadata
+- [x] `GET /api/files/:id/path` — breadcrumb ancestor chain
+- [x] `GET /api/files/search` — `ILIKE` filename search, exclude trashed
+- [x] `GET /api/files/starred` — all visible starred items
+- [x] `GET /api/files/trash` — top-level trashed items only
+- [x] `PATCH /api/files/:id` — rename, star/unstar, move (with cycle detection for folders; reject trashed target parent)
+- [x] `PATCH /api/files/:id/trash` — set `trashedAt`; cascade `trashedByAncestorId` for folders
 - [ ] `PATCH /api/files/:id/restore` — clear direct trash; clear descendant ancestor-trash; fall back to root if parent gone
-- [ ] `DELETE /api/files/:id` — permanent delete; recursive for folders; remove S3 objects; decrement quota
+- [x] `DELETE /api/files/:id` — permanent delete; recursive for folders; remove S3 objects; decrement quota
 
 ### Tests
-- [ ] Create folder → returns folder with `isFolder: true`
-- [ ] Create folder with name containing `/` → 400
-- [ ] Create folder with name `"  "` (whitespace only) → 400
-- [ ] Create folder with trashed `parentId` → 400
-- [ ] List root → returns only non-trashed items, folders first then files, alphabetical
-- [ ] List with `foldersOnly=true` → returns only folders
-- [ ] List folder with trashed children → trashed children excluded
-- [ ] `GET /api/files/:id` → returns correct metadata
-- [ ] `GET /api/files/:id/path` for nested folder → returns ancestor chain from root
-- [ ] Search by partial filename → returns matching non-trashed items
-- [ ] Search excludes directly trashed items
-- [ ] Search excludes items with `trashedByAncestorId` set
-- [ ] Star a file → `starred: true`; `GET /api/files/starred` includes it
-- [ ] Unstar a file → `starred: false`; `GET /api/files/starred` excludes it
-- [ ] Rename a file → name updated
-- [ ] Rename with invalid characters → 400
-- [ ] Move file to different folder → `parentId` updated
-- [ ] Move folder into itself → 400
-- [ ] Move folder into its own descendant → 400
-- [ ] Move into trashed folder → 400
-- [ ] Trash a file → `trashedAt` set; excluded from list and search
-- [ ] Trash a folder → `trashedAt` set on folder; `trashedByAncestorId` set on all descendants
-- [ ] Trash a folder where a child was already directly trashed → child keeps its own `trashedAt`, gains `trashedByAncestorId`
-- [ ] `GET /api/files/trash` → returns only top-level trashed items, not inherited-trash descendants
-- [ ] Restore a file → `trashedAt` cleared; reappears in list
+- [x] Create folder → returns folder with `isFolder: true`
+- [x] Create folder with name containing `/` → 400
+- [x] Create folder with name `"  "` (whitespace only) → 400
+- [x] Create folder with trashed `parentId` → 400
+- [x] List root → returns only non-trashed items, folders first then files, alphabetical
+- [x] List with `foldersOnly=true` → returns only folders
+- [x] List folder with trashed children → trashed children excluded
+- [x] `GET /api/files/:id` → returns correct metadata
+- [x] `GET /api/files/:id/path` for nested folder → returns ancestor chain from root
+- [x] Search by partial filename → returns matching non-trashed items
+- [x] Search excludes directly trashed items
+- [x] Search excludes items with `trashedByAncestorId` set
+- [x] Star a file → `starred: true`; `GET /api/files/starred` includes it
+- [x] Unstar a file → `starred: false`; `GET /api/files/starred` excludes it
+- [x] Rename a file → name updated
+- [x] Rename with invalid characters → 400
+- [x] Move file to different folder → `parentId` updated
+- [x] Move folder into itself → 400
+- [x] Move folder into its own descendant → 400
+- [x] Move into trashed folder → 400
+- [x] Trash a file → `trashedAt` set; excluded from list and search
+- [x] Trash a folder → `trashedAt` set on folder; `trashedByAncestorId` set on all descendants
+- [x] Trash a folder where a child was already directly trashed → child keeps its own `trashedAt`, gains `trashedByAncestorId`
+- [x] `GET /api/files/trash` → returns only top-level trashed items, not inherited-trash descendants
+- [x] Restore a file → `trashedAt` cleared; reappears in list
 - [ ] Restore a folder → clears `trashedByAncestorId` on descendants; descendants that were directly trashed remain trashed
-- [ ] Restore item whose parent was permanently deleted → restored to root (`parentId = null`)
-- [ ] Permanent delete file → DB row gone, S3 object deleted, `storageUsed` decremented
-- [ ] Permanent delete folder → all descendant rows and S3 objects deleted, `storageUsed` decremented for each file
+- [x] Restore item whose parent was permanently deleted → restored to root (`parentId = null`)
+- [x] Permanent delete file → DB row gone, S3 object deleted, `storageUsed` decremented
+- [x] Permanent delete folder → all descendant rows and S3 objects deleted, `storageUsed` decremented for each file
 
 ### Verify (manual)
 - [ ] Create nested folders → list contents → breadcrumb path is correct

@@ -33,7 +33,22 @@ Scaffolding, database, auth system, and auth UI.
 - [ ] Handle 401 responses globally: clear auth state, redirect to login with `redirect=<current-route>`
 - [ ] Handle 403 CSRF responses without logging the user out
 
-### Verify
+### Tests
+- [ ] Set up test runner (Vitest + supertest)
+- [ ] Register → sets auth + CSRF cookies, returns user summary
+- [ ] Login → sets auth + CSRF cookies, returns user summary
+- [ ] Login with wrong password → 401, no cookies set
+- [ ] Register with duplicate email → 409
+- [ ] Register with short password (< 8 chars) → 400
+- [ ] `GET /api/auth/session` with valid cookie → returns user
+- [ ] `GET /api/auth/session` with no cookie → 401
+- [ ] `POST /api/auth/logout` → clears both cookies
+- [ ] Mutating request without CSRF token → 403
+- [ ] Mutating request with mismatched CSRF token → 403
+- [ ] Auth-required endpoint without session cookie → 401
+- [ ] Rate limit: 11th login in 15 minutes → 429
+
+### Verify (manual)
 - [ ] Register a new user → cookie is set → redirected to `/drive`
 - [ ] Refresh the page → session rehydrates from `GET /api/auth/session`
 - [ ] Logout → cookie cleared → redirected to `/login`
@@ -43,9 +58,9 @@ Scaffolding, database, auth system, and auth UI.
 
 ---
 
-## Milestone 2 — File API + S3
+## Milestone 2 — S3 Upload Lifecycle
 
-All backend file operations. No frontend beyond what's needed to manually test.
+Presigned URL upload/download flow, confirmation, quota tracking, and storage endpoint.
 
 ### Backend
 - [ ] AWS S3 client configuration
@@ -53,6 +68,38 @@ All backend file operations. No frontend beyond what's needed to manually test.
 - [ ] `PATCH /api/files/:id/confirm` — idempotent; verify via `HeadObject`; flip status; increment quota once
 - [ ] `GET /api/files/:id/download` — presigned GET with `Content-Disposition: attachment`
 - [ ] `GET /api/files/:id/preview` — presigned GET with `Content-Disposition: inline` (images + PDF only)
+- [ ] `GET /api/storage` — return `{ used, limit }`
+- [ ] Rate limiting on upload-url
+
+### Tests
+- [ ] Upload URL request → returns `{ fileId, uploadUrl }`, file record is `pending`
+- [ ] Upload URL with file size > 100 MB → 400
+- [ ] Upload URL when quota would be exceeded → 413
+- [ ] Upload URL with trashed `parentId` → 400
+- [ ] Confirm after S3 upload → status flips to `uploaded`, `storageUsed` incremented
+- [ ] Confirm same file again → 200 success, `storageUsed` not incremented twice
+- [ ] Confirm file that doesn't exist in S3 → status stays `pending` or `failed`
+- [ ] Download returns presigned URL with correct `Content-Disposition: attachment` filename
+- [ ] Preview for JPEG → returns `{ url, mimeType }`
+- [ ] Preview for PDF → returns `{ url, mimeType }`
+- [ ] Preview for .zip → 400 (not previewable)
+- [ ] Preview for SVG → 400 (download-only)
+- [ ] `GET /api/storage` returns correct `{ used, limit }`
+- [ ] `GET /api/storage` reflects incremented usage after upload confirm
+- [ ] 101st upload URL request in 15 minutes → 429
+
+### Verify (manual)
+- [ ] Upload a file via `curl` using presigned URL → confirm → file record is `uploaded`, quota incremented
+- [ ] Repeat confirm on the same uploaded file → success response, quota not incremented twice
+- [ ] Download returns presigned URL with correct filename
+
+---
+
+## Milestone 3 — File Tree and Trash
+
+Folder CRUD, listing, search, starred, breadcrumbs, trash/restore with cascade logic.
+
+### Backend
 - [ ] `POST /api/files/folder` — create folder with invalid-character validation, trimmed names, reject empty-after-trim input, and reject trashed `parentId`
 - [ ] `GET /api/files` — list folder contents; exclude trashed; folders first, alphabetical; support `foldersOnly=true` for lazy-loaded move modal
 - [ ] `GET /api/files/:id` — single item metadata
@@ -64,35 +111,90 @@ All backend file operations. No frontend beyond what's needed to manually test.
 - [ ] `PATCH /api/files/:id/trash` — set `trashedAt`; cascade `trashedByAncestorId` for folders
 - [ ] `PATCH /api/files/:id/restore` — clear direct trash; clear descendant ancestor-trash; fall back to root if parent gone
 - [ ] `DELETE /api/files/:id` — permanent delete; recursive for folders; remove S3 objects; decrement quota
-- [ ] `POST /api/files/bulk-trash`, `bulk-restore`, `bulk-delete`, `bulk-move`
-- [ ] `POST /api/files/bulk-download` — stream ZIP via `archiver`; reject >50 files or >500 MB; reject folders
-- [ ] `GET /api/storage` — return `{ used, limit }`
-- [ ] Orphaned upload reconciliation script (standalone, runnable via Render Cron)
 
-### Verify
-- [ ] Upload a file via `curl` using presigned URL → confirm → file record is `uploaded`, quota incremented
-- [ ] Repeat confirm on the same uploaded file → success response, quota not incremented twice
-- [ ] Download returns presigned URL with correct filename
+### Tests
+- [ ] Create folder → returns folder with `isFolder: true`
+- [ ] Create folder with name containing `/` → 400
+- [ ] Create folder with name `"  "` (whitespace only) → 400
+- [ ] Create folder with trashed `parentId` → 400
+- [ ] List root → returns only non-trashed items, folders first then files, alphabetical
+- [ ] List with `foldersOnly=true` → returns only folders
+- [ ] List folder with trashed children → trashed children excluded
+- [ ] `GET /api/files/:id` → returns correct metadata
+- [ ] `GET /api/files/:id/path` for nested folder → returns ancestor chain from root
+- [ ] Search by partial filename → returns matching non-trashed items
+- [ ] Search excludes directly trashed items
+- [ ] Search excludes items with `trashedByAncestorId` set
+- [ ] Star a file → `starred: true`; `GET /api/files/starred` includes it
+- [ ] Unstar a file → `starred: false`; `GET /api/files/starred` excludes it
+- [ ] Rename a file → name updated
+- [ ] Rename with invalid characters → 400
+- [ ] Move file to different folder → `parentId` updated
+- [ ] Move folder into itself → 400
+- [ ] Move folder into its own descendant → 400
+- [ ] Move into trashed folder → 400
+- [ ] Trash a file → `trashedAt` set; excluded from list and search
+- [ ] Trash a folder → `trashedAt` set on folder; `trashedByAncestorId` set on all descendants
+- [ ] Trash a folder where a child was already directly trashed → child keeps its own `trashedAt`, gains `trashedByAncestorId`
+- [ ] `GET /api/files/trash` → returns only top-level trashed items, not inherited-trash descendants
+- [ ] Restore a file → `trashedAt` cleared; reappears in list
+- [ ] Restore a folder → clears `trashedByAncestorId` on descendants; descendants that were directly trashed remain trashed
+- [ ] Restore item whose parent was permanently deleted → restored to root (`parentId = null`)
+- [ ] Permanent delete file → DB row gone, S3 object deleted, `storageUsed` decremented
+- [ ] Permanent delete folder → all descendant rows and S3 objects deleted, `storageUsed` decremented for each file
+
+### Verify (manual)
 - [ ] Create nested folders → list contents → breadcrumb path is correct
 - [ ] `GET /api/files?parentId=<id>&foldersOnly=true` → returns folders only
 - [ ] Trash a folder → descendants hidden from list and search → restore → descendants reappear (except individually trashed ones)
 - [ ] `GET /api/files/trash` → shows only top-level trashed items, not inherited-trash descendants
 - [ ] Permanent delete folder → all descendant rows and S3 objects gone, quota decremented
 - [ ] `GET /api/storage` increases after upload confirm and decreases after permanent delete
-- [ ] Stale pending upload with valid S3 object → reconciliation marks uploaded once; invalid/missing object → marked failed
 - [ ] Attempt to create folder / upload / move into a trashed folder → 400
-- [ ] Bulk restore 2 trashed files → both restored; bulk restore file whose parent is deleted → restored to root
-- [ ] Bulk download 3 files → ZIP streams correctly
-- [ ] Bulk download 51 files → 400 error
-- [ ] 101st upload URL request in 15 minutes → 429
 
 ---
 
-## Milestone 3 — Core Frontend
+## Milestone 4 — Bulk Operations and Seed Script
+
+Bulk endpoints, reconciliation script, and a seed script for frontend milestone testing.
+
+### Backend
+- [ ] `POST /api/files/bulk-trash` — bulk trash. Body: `{ ids: string[] }`
+- [ ] `POST /api/files/bulk-restore` — bulk restore. Body: `{ ids: string[] }`. Falls back to root per item if parent gone
+- [ ] `POST /api/files/bulk-delete` — bulk permanent delete. Body: `{ ids: string[] }`
+- [ ] `POST /api/files/bulk-move` — bulk move. Body: `{ ids: string[], parentId: string }`
+- [ ] `POST /api/files/bulk-download` — stream ZIP via `archiver`; reject >50 files or >500 MB; reject folders
+- [ ] Orphaned upload reconciliation script (standalone, runnable via Render Cron)
+- [ ] Seed script: creates a test user with nested folders, sample files (via presigned URL flow), starred items, and trashed items for frontend testing
+
+### Tests
+- [ ] Bulk trash 3 files → all three have `trashedAt` set
+- [ ] Bulk restore 2 trashed files → both restored
+- [ ] Bulk restore file whose parent is deleted → restored to root
+- [ ] Bulk delete 2 files → DB rows and S3 objects gone, quota decremented
+- [ ] Bulk move 3 files to a new folder → all three have updated `parentId`
+- [ ] Bulk download 3 files → ZIP streams with correct filenames
+- [ ] Bulk download 51 files → 400
+- [ ] Bulk download over 500 MB total → 400
+- [ ] Bulk download with a folder in selection → 400
+- [ ] Reconciliation: stale pending upload with valid S3 object → marked `uploaded`, quota incremented once
+- [ ] Reconciliation: stale pending upload with missing S3 object → marked `failed`
+- [ ] Seed script runs without errors and creates expected data
+
+### Verify (manual)
+- [ ] Bulk restore 2 trashed files → both restored; bulk restore file whose parent is deleted → restored to root
+- [ ] Bulk download 3 files → ZIP streams correctly
+- [ ] Bulk download 51 files → 400 error
+- [ ] Stale pending upload with valid S3 object → reconciliation marks uploaded once; invalid/missing object → marked failed
+- [ ] Seed script creates usable test data for subsequent milestones
+
+---
+
+## Milestone 5 — Core Frontend
 
 Main drive UI: navigation, file list, folders, context menu, search, starred, trash.
 
-> **Note:** M3 has no upload UI. Verification assumes test files are created via M2's API (curl or a seed script).
+> **Note:** M5 has no upload UI. Verification assumes test files are created via M4's seed script.
 
 ### Frontend
 - [ ] App layout: sidebar + header + main content area (`DriveView`)
@@ -113,7 +215,7 @@ Main drive UI: navigation, file list, folders, context menu, search, starred, tr
 - [ ] Double-click behavior: folder → navigate, previewable → preview, other → download
 - [ ] Pinia files store for current folder state and CRUD operations
 
-### Verify
+### Verify (manual)
 - [ ] Create folders, navigate in and out, breadcrumbs update correctly
 - [ ] Right-click → Rename → name updates in list
 - [ ] Right-click → Star → appears in Starred view
@@ -129,7 +231,7 @@ Main drive UI: navigation, file list, folders, context menu, search, starred, tr
 
 ---
 
-## Milestone 4 — Uploads, Multi-Select, Polish
+## Milestone 6 — Uploads, Multi-Select, Polish
 
 Upload panel, drag-and-drop, multi-select with bulk actions, keyboard accessibility.
 
@@ -148,7 +250,7 @@ Upload panel, drag-and-drop, multi-select with bulk actions, keyboard accessibil
 - [ ] Focus traps in modals, focus restore on close
 - [ ] Accessible labels on forms, menus, dialogs
 
-### Verify
+### Verify (manual)
 - [ ] Upload 5 files → 3 active + 2 queued → all complete
 - [ ] Cancel mid-upload → upload stops, file not in list
 - [ ] Retry failed upload → succeeds
@@ -167,7 +269,7 @@ Upload panel, drag-and-drop, multi-select with bulk actions, keyboard accessibil
 
 ---
 
-## Milestone 5 — Deployment and Operations
+## Milestone 7 — Deployment and Operations
 
 Render deployment, S3 setup, environment wiring, and production-like smoke checks.
 
@@ -179,7 +281,7 @@ Render deployment, S3 setup, environment wiring, and production-like smoke check
 - [ ] Configure Render build/start pipeline: `npm install` → `prisma generate` → `prisma migrate deploy` → `vite build` → `tsc`
 - [ ] Configure Render Cron Job for orphaned upload reconciliation
 
-### Verify
+### Verify (manual)
 - [ ] Deployed app serves SPA and API from the same origin
 - [ ] Login, session bootstrap, and logout work in deployed environment with secure cookies
 - [ ] Direct S3 upload works from deployed frontend origin

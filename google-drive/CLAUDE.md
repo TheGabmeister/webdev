@@ -17,6 +17,9 @@ node dist/server.js  # Start production server
 npx prisma migrate dev    # Create/apply migrations in development
 npx prisma migrate deploy # Apply migrations in production
 npx prisma studio         # Visual database browser
+npm test             # Run all tests (Vitest + supertest)
+npm test -- --run    # Run tests once without watch mode
+npm test -- auth     # Run tests matching "auth"
 ```
 
 ## Architecture
@@ -32,7 +35,7 @@ npx prisma studio         # Visual database browser
 
 ## Key Rules
 
-- Follow `MILESTONES.md` delivery order (M1→M5) unless explicitly told otherwise.
+- Follow `MILESTONES.md` delivery order (M1→M7) unless explicitly told otherwise.
 - If a request conflicts with `SPEC.md` or `MILESTONES.md`, surface the conflict instead of silently diverging.
 - Preview support: JPEG, PNG, GIF, WebP, PDF only. SVG is download-only.
 - Name validation (folders and rename): block `/ \ : * ? " < > |`, trim whitespace, reject empty-after-trim.

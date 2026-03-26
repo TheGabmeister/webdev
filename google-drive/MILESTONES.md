@@ -65,7 +65,6 @@ All backend file operations. No frontend beyond what's needed to manually test.
 - [ ] `PATCH /api/files/:id/restore` — clear direct trash; clear descendant ancestor-trash; fall back to root if parent gone
 - [ ] `DELETE /api/files/:id` — permanent delete; recursive for folders; remove S3 objects; decrement quota
 - [ ] `POST /api/files/bulk-trash`, `bulk-delete`, `bulk-move`
-- [ ] `POST /api/files/bulk-download` — stream ZIP via `archiver`; reject >50 files or >500 MB; reject folders
 - [ ] `GET /api/storage` — return `{ used, limit }`
 - [ ] Orphaned upload reconciliation script (standalone, runnable via Render Cron)
 
@@ -74,10 +73,11 @@ All backend file operations. No frontend beyond what's needed to manually test.
 - [ ] Repeat confirm on the same uploaded file → success response, quota not incremented twice
 - [ ] Download returns presigned URL with correct filename
 - [ ] Create nested folders → list contents → breadcrumb path is correct
+- [ ] `GET /api/files?parentId=<id>&foldersOnly=true` → returns folders only
 - [ ] Trash a folder → descendants hidden from list and search → restore → descendants reappear (except individually trashed ones)
+- [ ] `GET /api/files/trash` → shows only top-level trashed items, not inherited-trash descendants
 - [ ] Permanent delete folder → all descendant rows and S3 objects gone, quota decremented
-- [ ] Bulk download 3 files → ZIP streams correctly
-- [ ] Bulk download 51 files → 400 error
+- [ ] `GET /api/storage` increases after upload confirm and decreases after permanent delete
 - [ ] Stale pending upload with valid S3 object → reconciliation marks uploaded once; invalid/missing object → marked failed
 - [ ] 101st upload URL request in 15 minutes → 429
 
@@ -90,6 +90,7 @@ Main drive UI: navigation, file list, folders, context menu, search, starred, tr
 ### Frontend
 - [ ] App layout: sidebar + header + main content area (`DriveView`)
 - [ ] Sidebar: New button (dropdown), nav links (My Drive, Starred, Trash), storage usage bar
+- [ ] Storage usage fetch from `GET /api/storage`, with refresh after quota-affecting mutations
 - [ ] File list component: columns (name, modified, size), file type icons, empty state
 - [ ] Folder navigation: click folder → route to `/drive/folder/:id` → fetch contents
 - [ ] Breadcrumbs from `/api/files/:id/path`
@@ -116,6 +117,7 @@ Main drive UI: navigation, file list, folders, context menu, search, starred, tr
 - [ ] Search by filename → results shown
 - [ ] Double-click image → preview modal opens
 - [ ] Double-click PDF → preview modal opens
+- [ ] Double-click SVG → no preview modal; file downloads instead
 - [ ] Double-click .zip → downloads
 
 ---
@@ -134,6 +136,7 @@ Upload panel, drag-and-drop, multi-select with bulk actions, keyboard accessibil
 - [ ] Bulk action bar: Move to, Move to trash, Download (context-aware for trash view: Restore, Delete forever)
 - [ ] File context menu adds Move to
 - [ ] Move modal: lazy-loaded folder tree, prevents cycles
+- [ ] `POST /api/files/bulk-download` integration: stream ZIP via `archiver`; reject >50 files or >500 MB; reject folders
 - [ ] Bulk download: single file → direct download, multiple → ZIP, folders disabled with explanation
 - [ ] Keyboard navigation: arrow keys, Enter to open, Space to toggle select, Shift+Arrow for range, F2 rename, Shift+F10 or Context Menu key to open actions, Esc to close
 - [ ] Focus traps in modals, focus restore on close
@@ -148,6 +151,9 @@ Upload panel, drag-and-drop, multi-select with bulk actions, keyboard accessibil
 - [ ] Ctrl+click 3 files → bulk bar shows "3 selected" → Move to trash → all 3 trashed
 - [ ] Shift+click range → correct range selected
 - [ ] Bulk download 2 files → ZIP downloads
+- [ ] Bulk download 51 files → rejected with user-facing error
 - [ ] Select a folder + file → bulk download disabled with explanation
+- [ ] Canceled upload remains out of the file list and is later marked failed or cleaned up by reconciliation
+- [ ] Attempt to move a folder into its descendant → blocked with user-facing error
 - [ ] Arrow keys navigate rows, Enter opens, F2 renames, Shift+F10 opens context menu
 - [ ] Tab through modal → focus stays trapped → Esc closes → focus returns to trigger
